@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { createReadStream, existsSync, readFileSync } from "node:fs";
 import { createInterface } from "node:readline";
+import { cleanPersian, cleanSenses, CLEANUP_VERSION } from "./persian.js";
 import { createGunzip } from "node:zlib";
 
 // Converts kaikki.org (Wiktionary) English entries into the compact offline
@@ -63,7 +64,7 @@ export function convertEntry(entry) {
 
   const kept = senses
     .filter((s) => s.persian.length)
-    .map(({ words, persian, ...s }) => ({ ...s, persian: [...new Set(persian)].slice(0, MAX_PERSIAN) }));
+    .map(({ words, persian, ...s }) => ({ ...s, persian: cleanPersian(persian).slice(0, MAX_PERSIAN) }));
   if (!kept.length) return null;
 
   const ipa = entry.sounds?.map((x) => x.ipa).filter(Boolean) ?? [];
@@ -124,12 +125,15 @@ export function readLines(stream, gzipped) {
 // when the file has changed.
 export async function loadLexicon(db, file = LEXICON_FILE) {
   if (!existsSync(file)) return db.lexiconSize();
-  const version = createHash("sha256").update(readFileSync(file)).digest("hex");
+  // Includes the cleanup version, so a file built before a cleanup change is cleaned on load.
+  const version = `${createHash("sha256").update(readFileSync(file)).digest("hex")}:${CLEANUP_VERSION}`;
   if (db.lexiconVersion() === version) return db.lexiconSize();
 
   const records = [];
   for await (const line of readLines(createReadStream(file), true)) {
-    if (line.trim()) records.push(JSON.parse(line));
+    if (!line.trim()) continue;
+    const record = JSON.parse(line);
+    records.push({ ...record, senses: cleanSenses(record.senses) });
   }
   db.importLexicon(records, version);
   return records.length;

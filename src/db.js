@@ -1,4 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
+import { cleanSenses, CLEANUP_VERSION } from "./persian.js";
 
 // One SQLite file holds the whole dictionary. Senses come from the lookup and
 // are stored as JSON; the user's own sentences live in their own table.
@@ -63,6 +64,17 @@ export function openDb(file = ":memory:") {
       LIMIT 1`),
   };
 
+  // Saved words get the same Persian cleanup as new ones, once per cleanup version.
+  if (q.metaGet.get("persian_cleanup")?.value !== CLEANUP_VERSION) {
+    const update = db.prepare("UPDATE words SET senses = ? WHERE id = ?");
+    db.exec("BEGIN");
+    for (const row of db.prepare("SELECT id, senses FROM words").all()) {
+      update.run(JSON.stringify(cleanSenses(JSON.parse(row.senses))), row.id);
+    }
+    q.metaSet.run("persian_cleanup", CLEANUP_VERSION);
+    db.exec("COMMIT");
+  }
+
   const shape = (row, examples) => ({
     id: row.id,
     word: row.word,
@@ -87,7 +99,7 @@ export function openDb(file = ":memory:") {
       return row ? shape(row, q.examplesOf.all(row.id)) : null;
     },
     addWord({ word, phonetic, audio = "", senses }) {
-      const { lastInsertRowid } = q.insert.run(word, phonetic, audio, JSON.stringify(senses));
+      const { lastInsertRowid } = q.insert.run(word, phonetic, audio, JSON.stringify(cleanSenses(senses)));
       return this.getWord(Number(lastInsertRowid));
     },
     deleteWord(id) {
