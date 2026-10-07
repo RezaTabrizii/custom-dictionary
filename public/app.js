@@ -316,7 +316,10 @@ if (Recognition) {
       if (isWord) renderList();
     };
     recognition.onerror = (ev) => {
-      if (ev.error === "not-allowed") setStatus("Allow microphone access to speak words.", true);
+      if (ev.error !== "not-allowed") return;
+      setStatus(window.isSecureContext
+        ? "Allow microphone access to speak words."
+        : "The microphone needs a secure connection. Open the app over https, or see the README for using it on your phone.", true);
     };
     recognition.onend = () => {
       recognition = null;

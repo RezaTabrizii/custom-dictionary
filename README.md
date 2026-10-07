@@ -91,6 +91,15 @@ Over plain `http://` with an IP address, Chrome blocks the microphone and the *I
 
 The address can change when the PC reconnects to Wi-Fi. If it does, update the flag with the new one.
 
+**Or give it a real https address** with a free Cloudflare quick tunnel (no account needed). This also works when the phone isn't on your Wi-Fi:
+
+1. Install `cloudflared` on the PC (Windows: `winget install --id Cloudflare.cloudflared`).
+2. Set `APP_PASSWORD` in `.env` and start the app. The tunnel makes it reachable from the internet, so the password keeps others out.
+3. In a second terminal, run `cloudflared tunnel --url http://localhost:3000`.
+4. Open the `https://….trycloudflare.com` address it prints on your phone. The microphone and *Install app* both work.
+
+The address changes every time you start the tunnel, and an installed app keeps its old address. So for daily use, install the app from your permanent address once you put it online.
+
 ## Put it online
 
 The app is a single Node server, and your dictionary lives in one file (`data/dictionary.db`). Any host that runs Node or Docker **and keeps a persistent disk** will do, for example Fly.io, Railway or Render (with a disk), or your own VPS.
