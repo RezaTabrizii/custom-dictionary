@@ -23,6 +23,7 @@ test("keeps only English words with Persian, one record per word", async () => {
 test("matches Persian translations to the right sense", async () => {
   const [run] = await build();
   assert.equal(run.phonetic, "/ɹʌn/");
+  assert.equal(run.audio, "https://upload.wikimedia.org/run-us.mp3");
   assert.deepEqual(run.forms, ["runs", "running", "ran"]);
   assert.deepEqual(run.senses, [
     { partOfSpeech: "verb", persian: ["دویدن"], definition: "To move swiftly on foot.", example: "She runs every morning." },
@@ -53,6 +54,7 @@ test("fills the database once and finds words offline, including inflected forms
 
   assert.equal(db.findInLexicon("run").senses.length, 3);
   assert.equal(db.findInLexicon("RAN").word, "run");
+  assert.equal(db.findInLexicon("run").audio, "https://upload.wikimedia.org/run-us.mp3");
   assert.equal(db.findInLexicon("bright").senses[0].persian[0], "روشن");
   assert.equal(db.findInLexicon("zyzzyva"), undefined);
 

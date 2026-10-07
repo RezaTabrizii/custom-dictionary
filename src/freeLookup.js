@@ -33,6 +33,13 @@ function englishSenses(entries) {
   return senses.slice(0, MAX_SENSES);
 }
 
+// A recorded pronunciation, preferring American English.
+function audioOf(entries) {
+  const urls = entries.flatMap((e) => e.phonetics ?? []).map((p) => p.audio).filter(Boolean)
+    .map((url) => (url.startsWith("//") ? `https:${url}` : url));
+  return urls.find((u) => /-us\.mp3$/.test(u)) ?? urls[0] ?? "";
+}
+
 function phoneticOf(entries) {
   const all = entries.flatMap((e) => [e.phonetic, ...(e.phonetics ?? []).map((p) => p.text)]);
   return all.find((p) => p?.startsWith("/")) ?? all.find(Boolean) ?? "";
@@ -81,6 +88,7 @@ export function createFreeLookup({ db, fetchImpl = fetch }) {
       return {
         word: entries[0].word?.toLowerCase() || word,
         phonetic: phoneticOf(entries) || offline?.phonetic || "",
+        audio: audioOf(entries) || offline?.audio || "",
         senses: addPersian(senses, offline?.senses ?? []),
       };
     }
@@ -88,5 +96,22 @@ export function createFreeLookup({ db, fetchImpl = fetch }) {
     throw new LookupError(unreachable
       ? "Couldn't reach the Free Dictionary, and this word isn't in the offline dictionary. Try again later."
       : `"${input}" isn't in the Free Dictionary or the offline dictionary.`);
+  };
+}
+
+// Claude gives no audio, so add a recording from the offline dictionary or the
+// Free Dictionary API when one exists.
+export function withRecording(lookup, { db, fetchImpl = fetch }) {
+  return async function lookupWithRecording(input) {
+    const entry = await lookup(input);
+    let audio = db.findInLexicon(entry.word)?.audio ?? "";
+    if (!audio) {
+      try {
+        audio = audioOf((await fetchEnglish(entry.word, fetchImpl)) ?? []);
+      } catch {
+        // No recording; the app falls back to the device's voice.
+      }
+    }
+    return { ...entry, audio };
   };
 }

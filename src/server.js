@@ -2,7 +2,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { createApp } from "./app.js";
 import { openDb } from "./db.js";
-import { createFreeLookup } from "./freeLookup.js";
+import { createFreeLookup, withRecording } from "./freeLookup.js";
 import { loadLexicon } from "./lexicon.js";
 import { createLookup } from "./lookup.js";
 
@@ -17,7 +17,9 @@ console.log(lexiconSize
 
 // Claude when an API key is set; otherwise the Free Dictionary API for English
 // plus the offline dictionary for Persian.
-const lookup = process.env.ANTHROPIC_API_KEY ? createLookup() : createFreeLookup({ db });
+const lookup = process.env.ANTHROPIC_API_KEY
+  ? withRecording(createLookup(), { db })
+  : createFreeLookup({ db });
 console.log(`Word lookups use ${process.env.ANTHROPIC_API_KEY ? "Claude" : "the Free Dictionary API and the offline dictionary"}.`);
 
 const app = createApp({ db, lookup, password: process.env.APP_PASSWORD ?? "" });

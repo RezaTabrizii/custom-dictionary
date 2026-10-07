@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { openDb } from "../src/db.js";
-import { createFreeLookup } from "../src/freeLookup.js";
+import { createFreeLookup, withRecording } from "../src/freeLookup.js";
 import { LookupError } from "../src/lookup.js";
 
 // Offline lexicon records, as built from kaikki.org data.
@@ -14,7 +14,7 @@ const OFFLINE = [
     ],
   },
   {
-    word: "bright", phonetic: "/bɹaɪt/", forms: [], senses: [
+    word: "bright", phonetic: "/bɹaɪt/", audio: "https://upload.wikimedia.org/bright.mp3", forms: [], senses: [
       { partOfSpeech: "adjective", persian: ["روشن"], definition: "Emitting much light.", example: "" },
     ],
   },
@@ -25,7 +25,11 @@ const FREE_DICT = {
   run: [{
     word: "run",
     phonetic: "/ɹʌn/",
-    phonetics: [{ text: "/ɹʌn/", audio: "" }],
+    phonetics: [
+      { text: "/ɹʌn/", audio: "" },
+      { text: "/ɹʌn/", audio: "https://api.dictionaryapi.dev/media/pronunciations/en/run-uk.mp3" },
+      { text: "/ɹʌn/", audio: "https://api.dictionaryapi.dev/media/pronunciations/en/run-us.mp3" },
+    ],
     meanings: [
       { partOfSpeech: "verb", definitions: [
         { definition: "To move swiftly on foot so that both feet leave the ground.", example: "I run every day." },
@@ -54,7 +58,7 @@ function setup({ down = false } = {}) {
       ? { ok: true, status: 200, json: async () => body }
       : { ok: false, status: 404, json: async () => ({ title: "No Definitions Found" }) };
   };
-  return { lookup: createFreeLookup({ db, fetchImpl }), asked };
+  return { lookup: createFreeLookup({ db, fetchImpl }), asked, db, fetchImpl };
 }
 
 test("English from Free Dictionary, Persian from the offline dictionary", async () => {
@@ -63,6 +67,7 @@ test("English from Free Dictionary, Persian from the offline dictionary", async 
   assert.deepEqual(asked, ["run"]); // an inflected form is looked up by its base word
   assert.equal(entry.word, "run");
   assert.equal(entry.phonetic, "/ɹʌn/");
+  assert.equal(entry.audio, "https://api.dictionaryapi.dev/media/pronunciations/en/run-us.mp3");
   assert.deepEqual(entry.senses, [
     { partOfSpeech: "verb", persian: ["دویدن"], definition: "To move swiftly on foot so that both feet leave the ground.", example: "I run every day." },
     { partOfSpeech: "verb", persian: ["اداره کردن"], definition: "To be in charge of; to manage.", example: "She runs a shop." },
@@ -93,4 +98,13 @@ test("falls back to the offline dictionary when Free Dictionary is unreachable",
 test("reports a word neither source knows", async () => {
   const { lookup } = setup();
   await assert.rejects(lookup("qwzx"), LookupError);
+});
+
+test("adds a recording to Claude's answers, from the offline data or Free Dictionary", async () => {
+  const { db, fetchImpl } = setup();
+  const claude = async (word) => ({ word, phonetic: "", senses: [] });
+  const lookup = withRecording(claude, { db, fetchImpl });
+  assert.equal((await lookup("bright")).audio, "https://upload.wikimedia.org/bright.mp3");
+  assert.equal((await lookup("run")).audio, "https://api.dictionaryapi.dev/media/pronunciations/en/run-us.mp3");
+  assert.equal((await lookup("qwzx")).audio, "");
 });

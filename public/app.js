@@ -137,7 +137,7 @@ function renderDetail() {
       <header class="entry-head">
         <h1 class="headword">${esc(w.word)}</h1>
         <div class="pron">
-          ${"speechSynthesis" in window ? `<button class="icon-btn" type="button" data-action="speak" aria-label="Hear it">${icon("speaker-high")}</button>` : ""}
+          ${w.audio || "speechSynthesis" in window ? `<button class="icon-btn" type="button" data-action="speak" aria-label="Hear the pronunciation">${icon("speaker-high")}</button>` : ""}
           <span>${esc(w.phonetic)}</span>
         </div>
       </header>
@@ -238,12 +238,7 @@ els.detail.addEventListener("click", async (e) => {
   const w = words.find((x) => x.id === selectedId());
   if (!w) return;
 
-  if (btn.dataset.action === "speak") {
-    speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(w.word);
-    u.lang = "en-US";
-    speechSynthesis.speak(u);
-  }
+  if (btn.dataset.action === "speak") pronounce(w);
   if (btn.dataset.action === "delete-example") {
     try {
       await api(`/examples/${btn.dataset.id}`, { method: "DELETE" });
@@ -270,6 +265,27 @@ addEventListener("hashchange", () => {
   if (selectedId()) els.detail.focus({ preventScroll: true });
   els.detail.scrollTop = 0;
 });
+
+/* ---------- Pronunciation ---------- */
+
+// Plays the recorded pronunciation, or the device's voice when there is none
+// or it can't be played (for example offline).
+let player = null;
+
+function pronounce(w) {
+  player?.pause();
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  if (!w.audio) return speakWithVoice(w.word);
+  player = new Audio(w.audio);
+  player.play().catch(() => speakWithVoice(w.word));
+}
+
+function speakWithVoice(text) {
+  if (!("speechSynthesis" in window)) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "en-US";
+  speechSynthesis.speak(u);
+}
 
 /* ---------- Speech input ---------- */
 

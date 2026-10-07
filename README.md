@@ -7,6 +7,8 @@ Your own English to Persian dictionary. It starts empty and you fill it.
   - the word type (noun, verb, adjective and so on)
   - a short English definition
   - an English example sentence
+  - the pronunciation, written in IPA and playable with the speaker button
+- **Hear each word** pronounced. The speaker button plays a real recording from Wiktionary when one exists; otherwise it uses your phone's or browser's built-in voice.
 - **Add your own sentences** under any word, typed or spoken.
 - **Search** your words in English or Persian from the same box.
 - **Works on the web and Android.** It's a Progressive Web App: open it in Chrome on your phone and choose *Install app*. It also opens offline, showing your last saved words.
@@ -28,13 +30,13 @@ When you add a word, the server looks it up and stores the answer in SQLite. Wor
 
 ### Where meanings come from
 
-**With a Claude API key** (`ANTHROPIC_API_KEY` set), Claude provides everything: word types, Persian meanings, definitions and examples. It costs about $0.01 per new word and corrects spelling and speech mistakes.
+**With a Claude API key** (`ANTHROPIC_API_KEY` set), Claude provides everything: word types, Persian meanings, definitions and examples. It costs about $0.01 per new word and corrects spelling and speech mistakes. The pronunciation recording comes from the offline dictionary or the Free Dictionary API.
 
 **Without a key**, it's free and combines two sources:
 
 | | Source |
 |---|---|
-| Word types, English definitions, examples, pronunciation | [Free Dictionary API](https://dictionaryapi.dev) (online, no key) |
+| Word types, English definitions, examples, pronunciation and its recording | [Free Dictionary API](https://dictionaryapi.dev) (online, no key) |
 | Persian meanings | The offline dictionary (kaikki.org / Wiktionary data) |
 
 Each English meaning gets the Persian of the offline meaning with the same word type and the closest definition. Inflected forms are looked up by their base word ("ran" finds "run"). If one source has nothing:

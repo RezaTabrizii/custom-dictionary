@@ -7,6 +7,7 @@ import { LookupError } from "../src/lookup.js";
 const ENTRY = {
   word: "run",
   phonetic: "/rʌn/",
+  audio: "https://example.org/run.mp3",
   senses: [
     { partOfSpeech: "verb", persian: ["دویدن"], definition: "To move fast on foot.", example: "I run every morning." },
     { partOfSpeech: "noun", persian: ["دو"], definition: "An act of running.", example: "She went for a run." },
@@ -49,6 +50,7 @@ test("adds, lists, annotates and deletes a word", async () => {
   const word = await res.json();
   assert.equal(word.word, "run");
   assert.equal(word.senses.length, 2);
+  assert.equal(word.audio, "https://example.org/run.mp3");
   assert.deepEqual(lookups, ["run"]);
 
   // Same word again, or a mishearing that corrects to it, is not looked up twice into a duplicate.

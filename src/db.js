@@ -35,25 +35,31 @@ export function openDb(file = ":memory:") {
     );
   `);
 
+  // Columns added after the first release; older databases get them here.
+  for (const table of ["words", "lexicon"]) {
+    const columns = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name);
+    if (!columns.includes("audio")) db.exec(`ALTER TABLE ${table} ADD COLUMN audio TEXT NOT NULL DEFAULT ''`);
+  }
+
   const q = {
     all: db.prepare("SELECT * FROM words ORDER BY id DESC"),
     allExamples: db.prepare("SELECT * FROM examples ORDER BY id"),
     byId: db.prepare("SELECT * FROM words WHERE id = ?"),
     byWord: db.prepare("SELECT * FROM words WHERE word = ?"),
     examplesOf: db.prepare("SELECT * FROM examples WHERE word_id = ? ORDER BY id"),
-    insert: db.prepare("INSERT INTO words (word, phonetic, senses) VALUES (?, ?, ?)"),
+    insert: db.prepare("INSERT INTO words (word, phonetic, audio, senses) VALUES (?, ?, ?, ?)"),
     remove: db.prepare("DELETE FROM words WHERE id = ?"),
     insertExample: db.prepare("INSERT INTO examples (word_id, text) VALUES (?, ?)"),
     removeExample: db.prepare("DELETE FROM examples WHERE id = ?"),
     lexiconSize: db.prepare("SELECT count(*) AS n FROM lexicon"),
     metaGet: db.prepare("SELECT value FROM meta WHERE key = ?"),
     metaSet: db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)"),
-    lexiconInsert: db.prepare("INSERT OR IGNORE INTO lexicon (word, phonetic, senses) VALUES (?, ?, ?)"),
+    lexiconInsert: db.prepare("INSERT OR IGNORE INTO lexicon (word, phonetic, audio, senses) VALUES (?, ?, ?, ?)"),
     formInsert: db.prepare("INSERT OR IGNORE INTO lexicon_forms (form, word) VALUES (?, ?)"),
     lexiconGet: db.prepare(`
-      SELECT word, phonetic, senses FROM lexicon WHERE word = ?1
+      SELECT word, phonetic, audio, senses FROM lexicon WHERE word = ?1
       UNION ALL
-      SELECT l.word, l.phonetic, l.senses FROM lexicon_forms f JOIN lexicon l ON l.word = f.word WHERE f.form = ?1
+      SELECT l.word, l.phonetic, l.audio, l.senses FROM lexicon_forms f JOIN lexicon l ON l.word = f.word WHERE f.form = ?1
       LIMIT 1`),
   };
 
@@ -61,6 +67,7 @@ export function openDb(file = ":memory:") {
     id: row.id,
     word: row.word,
     phonetic: row.phonetic,
+    audio: row.audio,
     senses: JSON.parse(row.senses),
     examples: examples.map(({ id, text }) => ({ id, text })),
     createdAt: row.created_at,
@@ -79,8 +86,8 @@ export function openDb(file = ":memory:") {
       const row = q.byWord.get(word);
       return row ? shape(row, q.examplesOf.all(row.id)) : null;
     },
-    addWord({ word, phonetic, senses }) {
-      const { lastInsertRowid } = q.insert.run(word, phonetic, JSON.stringify(senses));
+    addWord({ word, phonetic, audio = "", senses }) {
+      const { lastInsertRowid } = q.insert.run(word, phonetic, audio, JSON.stringify(senses));
       return this.getWord(Number(lastInsertRowid));
     },
     deleteWord(id) {
@@ -106,7 +113,7 @@ export function openDb(file = ":memory:") {
         db.exec("DELETE FROM lexicon; DELETE FROM lexicon_forms;");
         q.metaSet.run("lexicon", version);
         for (const r of records) {
-          q.lexiconInsert.run(r.word, r.phonetic, JSON.stringify(r.senses));
+          q.lexiconInsert.run(r.word, r.phonetic, r.audio ?? "", JSON.stringify(r.senses));
           for (const form of r.forms) q.formInsert.run(form, r.word);
         }
         db.exec("COMMIT");
@@ -117,7 +124,7 @@ export function openDb(file = ":memory:") {
     },
     findInLexicon(word) {
       const row = q.lexiconGet.get(word);
-      return row && { word: row.word, phonetic: row.phonetic, senses: JSON.parse(row.senses) };
+      return row && { word: row.word, phonetic: row.phonetic, audio: row.audio, senses: JSON.parse(row.senses) };
     },
   };
 }

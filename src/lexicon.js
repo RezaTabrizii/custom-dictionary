@@ -5,7 +5,7 @@ import { createGunzip } from "node:zlib";
 
 // Converts kaikki.org (Wiktionary) English entries into the compact offline
 // lexicon, which supplies Persian meanings when there is no Claude API key. One lexicon line looks like:
-// {"word":"run","phonetic":"/rʌn/","forms":["ran","runs"],"senses":[{partOfSpeech, persian, definition, example}]}
+// {"word":"run","phonetic":"/rʌn/","audio":"https://…/En-us-run.mp3","forms":["ran","runs"],"senses":[{partOfSpeech, persian, definition, example}]}
 
 export const LEXICON_FILE = new URL("../lexicon/en-fa.jsonl.gz", import.meta.url);
 
@@ -67,12 +67,20 @@ export function convertEntry(entry) {
   if (!kept.length) return null;
 
   const ipa = entry.sounds?.map((x) => x.ipa).filter(Boolean) ?? [];
+  const recordings = (entry.sounds ?? []).filter((x) => x.mp3_url);
+  const recording = recordings.find((x) => x.tags?.some((t) => t === "US" || t === "General-American")) ?? recordings[0];
   const forms = (entry.forms ?? [])
     .filter((f) => !f.tags?.some((t) => t === "table-tags" || t === "inflection-template"))
     .map((f) => f.form)
     .filter((f) => typeof f === "string" && /^[a-z][a-z'-]*$/i.test(f) && f.toLowerCase() !== entry.word.toLowerCase());
 
-  return { word: entry.word, phonetic: ipa.find((p) => p.startsWith("/")) ?? ipa[0] ?? "", forms, senses: kept };
+  return {
+    word: entry.word,
+    phonetic: ipa.find((p) => p.startsWith("/")) ?? ipa[0] ?? "",
+    audio: recording?.mp3_url ?? "",
+    forms,
+    senses: kept,
+  };
 }
 
 // Merges every part of speech of a word into one lexicon record.
@@ -89,6 +97,7 @@ export async function* buildLexicon(lines) {
       continue;
     }
     prev.phonetic ||= converted.phonetic;
+    prev.audio ||= converted.audio;
     prev.forms = [...new Set([...prev.forms, ...converted.forms])];
     prev.senses.push(...converted.senses);
   }
