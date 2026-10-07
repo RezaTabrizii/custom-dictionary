@@ -1,0 +1,18 @@
+{
+  "en": [
+    {
+      "partOfSpeech": "Verb",
+      "language": "English",
+      "definitions": [
+        {
+          "definition": "To <a rel=\"mw:WikiLink\" href=\"/wiki/move\" title=\"move\">move</a> swiftly on foot &amp; fast.",
+          "parsedExamples": [{ "example": "I <b>ran</b> home." }],
+          "examples": ["I <b>ran</b> home."]
+        },
+        { "definition": "" }
+      ]
+    },
+    { "partOfSpeech": "Noun", "language": "English", "definitions": [{ "definition": "Act or instance of running." }] }
+  ],
+  "fr": [{ "partOfSpeech": "Noun", "language": "French", "definitions": [{ "definition": "rhum" }] }]
+}

@@ -1,0 +1,29 @@
+[
+  {
+    "meta": { "id": "run:1", "uuid": "a1", "src": "learners", "section": "alpha", "stems": ["run", "ran", "running", "runs"], "offensive": false },
+    "hwi": { "hw": "run", "prs": [{ "ipa": "ˈrʌn", "sound": { "audio": "run00001" } }] },
+    "fl": "verb",
+    "ins": [{ "if": "ran" }, { "if": "run" }, { "if": "run*ning" }],
+    "def": [{
+      "sseq": [
+        [["sense", { "sn": "1", "dt": [["text", "{bc}to move with your legs at a speed that is faster than walking"], ["vis", [{ "t": "Can your little sister {it}run{/it} yet?" }, { "t": "He {it}ran{/it} home." }]]] }]],
+        [["sense", { "sn": "2", "sgram": "T", "dt": [["text", "{bc}to direct the business or activities of (someone or something) {bc}{sx|manage||}"], ["vis", [{ "t": "She {it}runs{/it} a small bakery." }]]] }]],
+        [["bs", { "sense": { "sn": "3", "dt": [["uns", [[["text", "used to say that a machine is working"], ["vis", [{ "t": "The engine is {it}running{/it} smoothly." }]]]]]] } }]],
+        [["pseq", [["sense", { "sn": "4 a", "dt": [["text", "{bc}to go somewhere quickly {dx}see also {dxt|run off||}{/dx}"]] }]]]]
+      ]
+    }],
+    "shortdef": ["to move with your legs at a speed that is faster than walking"]
+  },
+  {
+    "meta": { "id": "run:2", "uuid": "a2", "src": "learners", "stems": ["run", "runs"] },
+    "hwi": { "hw": "run" },
+    "fl": "noun",
+    "def": [{ "sseq": [[["sense", { "sn": "1", "dt": [["text", "{bc}an act of running"], ["vis", [{ "t": "I go for a {it}run{/it} every morning." }]]] }]]] }]
+  },
+  {
+    "meta": { "id": "run-down", "uuid": "a3", "src": "learners", "stems": ["run-down"] },
+    "hwi": { "hw": "run-down" },
+    "fl": "adjective",
+    "def": [{ "sseq": [[["sense", { "sn": "1", "dt": [["text", "{bc}in poor condition"]] }]]] }]
+  }
+]

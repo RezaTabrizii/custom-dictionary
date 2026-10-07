@@ -1,48 +1,19 @@
 import { tokens } from "./lexicon.js";
 import { LookupError } from "./lookup.js";
+import { createFreeDictionary, createMerriamWebster, createWiktionary } from "./sources.js";
 
-// The free lookup, used when there is no Claude API key:
-// English (word types, definitions, examples, pronunciation) comes from the
-// Free Dictionary API, and Persian meanings from the offline lexicon.
+// The free lookup, used when there is no Claude API key: English (word types,
+// definitions, examples, pronunciation) comes from the first online source that
+// knows the word, and Persian meanings from the offline lexicon.
 
-const API = "https://api.dictionaryapi.dev/api/v2/entries/en/";
-const POS = new Set([
-  "noun", "verb", "adjective", "adverb", "pronoun", "preposition",
-  "conjunction", "interjection", "determiner", "phrasal verb", "idiom",
-]);
-const PER_POS = 4;
-const MAX_SENSES = 10;
-
-// Returns the Free Dictionary entries, null when the word is unknown, and
-// throws when the service can't be reached.
-async function fetchEnglish(word, fetchImpl) {
-  const res = await fetchImpl(API + encodeURIComponent(word), { signal: AbortSignal.timeout(8000) });
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`Free Dictionary API answered ${res.status}`);
-  return res.json();
-}
-
-function englishSenses(entries) {
-  const senses = [];
-  for (const meaning of entries.flatMap((e) => e.meanings ?? [])) {
-    const pos = POS.has(meaning.partOfSpeech) ? meaning.partOfSpeech : "other";
-    for (const d of (meaning.definitions ?? []).slice(0, PER_POS)) {
-      if (d.definition) senses.push({ partOfSpeech: pos, persian: [], definition: d.definition, example: d.example ?? "" });
-    }
-  }
-  return senses.slice(0, MAX_SENSES);
-}
-
-// A recorded pronunciation, preferring American English.
-function audioOf(entries) {
-  const urls = entries.flatMap((e) => e.phonetics ?? []).map((p) => p.audio).filter(Boolean)
-    .map((url) => (url.startsWith("//") ? `https:${url}` : url));
-  return urls.find((u) => /-us\.mp3$/.test(u)) ?? urls[0] ?? "";
-}
-
-function phoneticOf(entries) {
-  const all = entries.flatMap((e) => [e.phonetic, ...(e.phonetics ?? []).map((p) => p.text)]);
-  return all.find((p) => p?.startsWith("/")) ?? all.find(Boolean) ?? "";
+// In order: Merriam-Webster Learner's (when its key is set), the Free
+// Dictionary API, then Wiktionary.
+export function englishSources({ merriamWebsterKey = "", fetchImpl = fetch } = {}) {
+  return [
+    ...(merriamWebsterKey ? [{ name: "Merriam-Webster", lookup: createMerriamWebster({ key: merriamWebsterKey, fetchImpl }) }] : []),
+    { name: "Free Dictionary", lookup: createFreeDictionary({ fetchImpl }) },
+    { name: "Wiktionary", lookup: createWiktionary({ fetchImpl }) },
+  ];
 }
 
 // Gives each English sense the Persian of the offline sense with the same word
@@ -69,47 +40,49 @@ export function addPersian(senses, offlineSenses) {
   return senses;
 }
 
-export function createFreeLookup({ db, fetchImpl = fetch }) {
+export function createFreeLookup({ db, sources = englishSources() }) {
   return async function lookup(input) {
     const offline = db.findInLexicon(input);
     const word = offline?.word ?? input; // "ran" -> "run"
 
-    let entries = null;
-    let unreachable = false;
-    try {
-      entries = await fetchEnglish(word, fetchImpl);
-    } catch (err) {
-      console.error("Free Dictionary API failed:", err.message);
-      unreachable = true;
-    }
-
-    const senses = entries ? englishSenses(entries) : [];
-    if (senses.length) {
+    let unreachable = 0;
+    for (const source of sources) {
+      let english;
+      try {
+        english = await source.lookup(word);
+      } catch (err) {
+        console.error(`${source.name} failed for "${word}": ${err.message}`);
+        unreachable++;
+        continue;
+      }
+      if (!english) continue;
       return {
-        word: entries[0].word?.toLowerCase() || word,
-        phonetic: phoneticOf(entries) || offline?.phonetic || "",
-        audio: audioOf(entries) || offline?.audio || "",
-        senses: addPersian(senses, offline?.senses ?? []),
+        word: english.word || word,
+        phonetic: english.phonetic || offline?.phonetic || "",
+        audio: english.audio || offline?.audio || "",
+        senses: addPersian(english.senses, offline?.senses ?? []),
       };
     }
+
     if (offline) return offline;
-    throw new LookupError(unreachable
-      ? "Couldn't reach the Free Dictionary, and this word isn't in the offline dictionary. Try again later."
-      : `"${input}" isn't in the Free Dictionary or the offline dictionary.`);
+    throw new LookupError(unreachable === sources.length
+      ? "Couldn't reach any online dictionary, and this word isn't in the offline dictionary. Try again later."
+      : `"${input}" wasn't found in any dictionary.`);
   };
 }
 
 // Claude gives no audio, so add a recording from the offline dictionary or the
-// Free Dictionary API when one exists.
-export function withRecording(lookup, { db, fetchImpl = fetch }) {
+// first online source that has one.
+export function withRecording(lookup, { db, sources = englishSources() }) {
   return async function lookupWithRecording(input) {
     const entry = await lookup(input);
     let audio = db.findInLexicon(entry.word)?.audio ?? "";
-    if (!audio) {
+    for (const source of sources) {
+      if (audio) break;
       try {
-        audio = audioOf((await fetchEnglish(entry.word, fetchImpl)) ?? []);
+        audio = (await source.lookup(entry.word))?.audio ?? "";
       } catch {
-        // No recording; the app falls back to the device's voice.
+        // Try the next one; without any, the app uses the device's voice.
       }
     }
     return { ...entry, audio };

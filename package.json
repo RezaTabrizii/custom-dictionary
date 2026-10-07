@@ -12,7 +12,8 @@
     "start": "node src/server.js",
     "dev": "node --watch --env-file-if-exists=.env src/server.js",
     "test": "node --test",
-    "build:lexicon": "node scripts/build-lexicon.js"
+    "build:lexicon": "node scripts/build-lexicon.js",
+    "check:sources": "node --env-file-if-exists=.env scripts/check-sources.js"
   },
   "license": "MIT",
   "dependencies": {

@@ -1,13 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { openDb } from "../src/db.js";
-import { createFreeLookup, withRecording } from "../src/freeLookup.js";
+import { createFreeLookup, englishSources, withRecording } from "../src/freeLookup.js";
 import { LookupError } from "../src/lookup.js";
 
 // Offline lexicon records, as built from kaikki.org data.
 const OFFLINE = [
   {
-    word: "run", phonetic: "/ɹʌn/", forms: ["ran", "runs"], senses: [
+    word: "run", phonetic: "/ɹʌn/", audio: "", forms: ["ran", "runs"], senses: [
       { partOfSpeech: "verb", persian: ["دویدن"], definition: "To move swiftly on foot.", example: "" },
       { partOfSpeech: "verb", persian: ["اداره کردن"], definition: "To manage or be in charge of something.", example: "" },
       { partOfSpeech: "noun", persian: ["دو"], definition: "An act of running.", example: "" },
@@ -20,91 +20,86 @@ const OFFLINE = [
   },
 ];
 
-// Free Dictionary API response shape.
-const FREE_DICT = {
-  run: [{
-    word: "run",
-    phonetic: "/ɹʌn/",
-    phonetics: [
-      { text: "/ɹʌn/", audio: "" },
-      { text: "/ɹʌn/", audio: "https://api.dictionaryapi.dev/media/pronunciations/en/run-uk.mp3" },
-      { text: "/ɹʌn/", audio: "https://api.dictionaryapi.dev/media/pronunciations/en/run-us.mp3" },
-    ],
-    meanings: [
-      { partOfSpeech: "verb", definitions: [
-        { definition: "To move swiftly on foot so that both feet leave the ground.", example: "I run every day." },
-        { definition: "To be in charge of; to manage.", example: "She runs a shop." },
-      ] },
-      { partOfSpeech: "noun", definitions: [{ definition: "Act or instance of running." }] },
-    ],
-  }],
-  zebra: [{
-    word: "zebra",
-    phonetics: [{ text: "/ˈzɛbɹə/" }],
-    meanings: [{ partOfSpeech: "noun", definitions: [{ definition: "An African wild horse with black and white stripes." }] }],
-  }],
+const RUN = {
+  word: "run", phonetic: "/ˈrʌn/", audio: "https://media.merriam-webster.com/run.mp3", senses: [
+    { partOfSpeech: "verb", persian: [], definition: "to move with your legs at a speed that is faster than walking", example: "He ran home." },
+    { partOfSpeech: "verb", persian: [], definition: "to direct the business of (something): manage", example: "She runs a bakery." },
+    { partOfSpeech: "noun", persian: [], definition: "an act of running", example: "" },
+  ],
 };
+const ZEBRA = { word: "zebra", phonetic: "", audio: "", senses: [{ partOfSpeech: "noun", persian: [], definition: "A striped horse.", example: "" }] };
 
-function setup({ down = false } = {}) {
-  const db = openDb();
-  db.importLexicon(OFFLINE, "test");
+// A source that knows some words, or is down.
+function source(name, known, { down = false } = {}) {
   const asked = [];
-  const fetchImpl = async (url) => {
-    const word = decodeURIComponent(url.split("/").pop());
-    asked.push(word);
-    if (down) throw new TypeError("fetch failed");
-    const body = FREE_DICT[word];
-    return body
-      ? { ok: true, status: 200, json: async () => body }
-      : { ok: false, status: 404, json: async () => ({ title: "No Definitions Found" }) };
+  return {
+    name,
+    asked,
+    lookup: async (word) => {
+      asked.push(word);
+      if (down) throw new Error("fetch failed");
+      return known[word] ? structuredClone(known[word]) : null;
+    },
   };
-  return { lookup: createFreeLookup({ db, fetchImpl }), asked, db, fetchImpl };
 }
 
-test("English from Free Dictionary, Persian from the offline dictionary", async () => {
-  const { lookup, asked } = setup();
+function setup(sources) {
+  const db = openDb();
+  db.importLexicon(OFFLINE, "test");
+  return { db, lookup: createFreeLookup({ db, sources }) };
+}
+
+test("English from the first source, Persian from the offline dictionary", async () => {
+  const mw = source("Merriam-Webster", { run: RUN });
+  const { lookup } = setup([mw]);
   const entry = await lookup("ran");
-  assert.deepEqual(asked, ["run"]); // an inflected form is looked up by its base word
-  assert.equal(entry.word, "run");
-  assert.equal(entry.phonetic, "/ɹʌn/");
-  assert.equal(entry.audio, "https://api.dictionaryapi.dev/media/pronunciations/en/run-us.mp3");
-  assert.deepEqual(entry.senses, [
-    { partOfSpeech: "verb", persian: ["دویدن"], definition: "To move swiftly on foot so that both feet leave the ground.", example: "I run every day." },
-    { partOfSpeech: "verb", persian: ["اداره کردن"], definition: "To be in charge of; to manage.", example: "She runs a shop." },
-    { partOfSpeech: "noun", persian: ["دو"], definition: "Act or instance of running.", example: "" },
-  ]);
+  assert.deepEqual(mw.asked, ["run"]); // an inflected form is looked up by its base word
+  assert.equal(entry.audio, RUN.audio);
+  assert.deepEqual(entry.senses.map((s) => s.persian), [["دویدن"], ["اداره کردن"], ["دو"]]);
 });
 
-test("a word missing from the offline dictionary is saved with English only", async () => {
-  const { lookup } = setup();
+test("the next source is used when one is down or doesn't know the word", async () => {
+  const mw = source("Merriam-Webster", {}, { down: true });
+  const free = source("Free Dictionary", {});
+  const wiki = source("Wiktionary", { zebra: ZEBRA });
+  const { lookup } = setup([mw, free, wiki]);
   const entry = await lookup("zebra");
-  assert.equal(entry.phonetic, "/ˈzɛbɹə/");
-  assert.deepEqual(entry.senses[0].persian, []);
+  assert.deepEqual([mw.asked, free.asked, wiki.asked], [["zebra"], ["zebra"], ["zebra"]]);
+  assert.equal(entry.senses[0].definition, "A striped horse.");
+  assert.deepEqual(entry.senses[0].persian, []); // not in the offline dictionary
 });
 
-test("falls back to the offline dictionary when Free Dictionary has no entry", async () => {
-  const { lookup } = setup();
+test("later sources aren't asked once one has the word", async () => {
+  const mw = source("Merriam-Webster", { run: RUN });
+  const wiki = source("Wiktionary", { run: RUN });
+  await setup([mw, wiki]).lookup("run");
+  assert.deepEqual(wiki.asked, []);
+});
+
+test("the offline dictionary is used when no online source has the word", async () => {
+  const { lookup } = setup([source("A", {}), source("B", {}, { down: true })]);
   const entry = await lookup("bright");
   assert.equal(entry.senses[0].definition, "Emitting much light.");
   assert.deepEqual(entry.senses[0].persian, ["روشن"]);
 });
 
-test("falls back to the offline dictionary when Free Dictionary is unreachable", async () => {
-  const { lookup } = setup({ down: true });
-  assert.equal((await lookup("run")).senses.length, 3);
-  await assert.rejects(lookup("zebra"), /Couldn't reach/);
+test("a word nobody knows is reported, with the reason", async () => {
+  await assert.rejects(setup([source("A", {})]).lookup("qwzx"), (err) => err instanceof LookupError && /wasn't found/.test(err.message));
+  await assert.rejects(setup([source("A", {}, { down: true })]).lookup("qwzx"), /Couldn't reach/);
 });
 
-test("reports a word neither source knows", async () => {
-  const { lookup } = setup();
-  await assert.rejects(lookup("qwzx"), LookupError);
+test("sources are in the requested order, Merriam-Webster only with a key", () => {
+  assert.deepEqual(englishSources().map((s) => s.name), ["Free Dictionary", "Wiktionary"]);
+  assert.deepEqual(englishSources({ merriamWebsterKey: "k" }).map((s) => s.name), ["Merriam-Webster", "Free Dictionary", "Wiktionary"]);
 });
 
-test("adds a recording to Claude's answers, from the offline data or Free Dictionary", async () => {
-  const { db, fetchImpl } = setup();
+test("adds a recording to Claude's answers, from the offline data or the first source that has one", async () => {
+  const db = openDb();
+  db.importLexicon(OFFLINE, "test");
   const claude = async (word) => ({ word, phonetic: "", senses: [] });
-  const lookup = withRecording(claude, { db, fetchImpl });
+  const sources = [source("A", {}, { down: true }), source("B", { run: RUN })];
+  const lookup = withRecording(claude, { db, sources });
   assert.equal((await lookup("bright")).audio, "https://upload.wikimedia.org/bright.mp3");
-  assert.equal((await lookup("run")).audio, "https://api.dictionaryapi.dev/media/pronunciations/en/run-us.mp3");
+  assert.equal((await lookup("run")).audio, RUN.audio);
   assert.equal((await lookup("qwzx")).audio, "");
 });

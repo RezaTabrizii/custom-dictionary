@@ -20,9 +20,11 @@ public/                  the app: plain HTML, CSS and JavaScript, no build step
 src/app.js               the API (Express)
 src/db.js                storage: one SQLite file
 src/lookup.js            word lookup with Claude (when an API key is set)
-src/freeLookup.js        free word lookup: Free Dictionary API + offline Persian
+src/freeLookup.js        free word lookup: online English dictionaries + offline Persian
+src/sources.js           the online dictionaries: Merriam-Webster, Free Dictionary, Wiktionary
 src/lexicon.js           the offline Persian data (kaikki.org / Wiktionary)
 scripts/build-lexicon.js builds the offline data file
+scripts/check-sources.js checks each online dictionary with a real request
 lexicon/en-fa.jsonl.gz   the offline data file, once you've built it
 ```
 
@@ -32,18 +34,28 @@ When you add a word, the server looks it up and stores the answer in SQLite. Wor
 
 **With a Claude API key** (`ANTHROPIC_API_KEY` set), Claude provides everything: word types, Persian meanings, definitions and examples. It costs about $0.01 per new word and corrects spelling and speech mistakes. The pronunciation recording comes from the offline dictionary or the Free Dictionary API.
 
-**Without a key**, it's free and combines two sources:
+**Without a key**, it's free and combines these sources:
 
 | | Source |
 |---|---|
-| Word types, English definitions, examples, pronunciation and its recording | [Free Dictionary API](https://dictionaryapi.dev) (online, no key) |
+| Word types, English definitions, examples, pronunciation and its recording | The first online dictionary that knows the word, in this order:<br>1. [Merriam-Webster Learner's](https://dictionaryapi.com), when `MERRIAM_WEBSTER_KEY` is set (free key, 1,000 lookups a day)<br>2. [Free Dictionary API](https://dictionaryapi.dev) (no key)<br>3. [Wiktionary](https://en.wiktionary.org/api/rest_v1/) from Wikimedia (no key, no pronunciation) |
 | Persian meanings | The offline dictionary (kaikki.org / Wiktionary data) |
 
-Each English meaning gets the Persian of the offline meaning with the same word type and the closest definition. Inflected forms are looked up by their base word ("ran" finds "run"). If one source has nothing:
+Each English meaning gets the Persian of the offline meaning with the same word type and the closest definition. Inflected forms are looked up by their base word ("ran" finds "run"). If a dictionary is down or doesn't know the word, the next one is asked. If none of them has it:
 
-- **Free Dictionary doesn't have the word, or can't be reached:** the English comes from the offline dictionary too.
-- **The offline dictionary doesn't have the word:** it's saved with English only, and its page says no Persian meaning was found.
-- **Neither has it:** you get a "not found" message.
+- **The offline dictionary has the word:** its English is used too.
+- **The offline dictionary doesn't have it either:** you get a "not found" message.
+
+A word found online but missing from the offline dictionary is saved with English only, and its page says no Persian meaning was found.
+
+To check that every online dictionary works (and your Merriam-Webster key), run:
+
+```bash
+npm run check:sources            # checks "run"
+npm run check:sources -- happy   # checks another word
+```
+
+It shows what each dictionary returns, whether its recordings play, and what the app would save.
 
 ## Set up the free offline dictionary
 
@@ -106,6 +118,7 @@ The app is a single Node server, and your dictionary lives in one file (`data/di
 
 1. Set the environment variables:
    - `ANTHROPIC_API_KEY`: optional; leave it unset for the free lookup
+   - `MERRIAM_WEBSTER_KEY`: optional; your Merriam-Webster Learner's key
    - `APP_PASSWORD`: set one, so strangers can't use your dictionary or your API key
    - `DATA_DIR`: a folder on the persistent disk (the Docker image uses `/data`)
 2. Deploy with the included `Dockerfile`, or run `npm ci --omit=dev && npm start`.
@@ -120,7 +133,7 @@ Vazhe then opens full screen like any other app. If you later want it in the Pla
 
 ## Credits
 
-English definitions without a key: [Free Dictionary API](https://dictionaryapi.dev), from Wiktionary.
+English definitions without a key: [Merriam-Webster's Learner's Dictionary](https://learnersdictionary.com), the [Free Dictionary API](https://dictionaryapi.dev) and [Wiktionary](https://en.wiktionary.org).
 
 Offline dictionary data: [Wiktionary](https://en.wiktionary.org) via [kaikki.org](https://kaikki.org), under CC BY-SA 4.0 and GFDL.
 
