@@ -4,6 +4,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 COPY src ./src
 COPY public ./public
+COPY lexicon ./lexicon
 ENV DATA_DIR=/data
 VOLUME /data
 EXPOSE 3000

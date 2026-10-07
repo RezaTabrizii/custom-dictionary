@@ -119,7 +119,7 @@ function renderDetail() {
         <li class="sense">
           <p class="meaning" lang="fa" dir="rtl">${esc(s.persian.join("، "))}</p>
           <p class="definition">${esc(s.definition)}</p>
-          <p class="example">${esc(s.example)}</p>
+          ${s.example ? `<p class="example">${esc(s.example)}</p>` : ""}
         </li>`).join("")}
       </ol>
     </section>`).join("");

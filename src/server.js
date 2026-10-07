@@ -2,16 +2,23 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { createApp } from "./app.js";
 import { openDb } from "./db.js";
+import { createOfflineLookup, loadLexicon } from "./lexicon.js";
 import { createLookup } from "./lookup.js";
 
 const dataDir = process.env.DATA_DIR ?? "data";
 mkdirSync(dataDir, { recursive: true });
+const db = openDb(join(dataDir, "dictionary.db"));
 
-const app = createApp({
-  db: openDb(join(dataDir, "dictionary.db")),
-  lookup: createLookup(),
-  password: process.env.APP_PASSWORD ?? "",
-});
+const lexiconSize = await loadLexicon(db);
+console.log(lexiconSize
+  ? `Offline dictionary: ${lexiconSize} words.`
+  : "Offline dictionary is empty: run `npm run build:lexicon` to create lexicon/en-fa.jsonl.gz.");
+
+// Claude when an API key is set, otherwise the free offline dictionary.
+const lookup = process.env.ANTHROPIC_API_KEY ? createLookup() : createOfflineLookup(db);
+console.log(`Word lookups use ${process.env.ANTHROPIC_API_KEY ? "Claude" : "the offline dictionary"}.`);
+
+const app = createApp({ db, lookup, password: process.env.APP_PASSWORD ?? "" });
 
 const port = Number(process.env.PORT ?? 3000);
 app.listen(port, () => console.log(`Vazhe is running on http://localhost:${port}`));
