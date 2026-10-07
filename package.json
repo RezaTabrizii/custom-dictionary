@@ -1,0 +1,21 @@
+{
+  "name": "vazhe",
+  "version": "1.0.0",
+  "description": "A personal English to Persian dictionary you fill yourself.",
+  "private": true,
+  "type": "module",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch --env-file-if-exists=.env src/server.js",
+    "test": "node --test"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "express": "^5.2.1"
+  }
+}
