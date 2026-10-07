@@ -53,7 +53,7 @@ The offline data comes from [kaikki.org](https://kaikki.org), which publishes En
 npm run build:lexicon
 ```
 
-This streams the full English Wiktionary file (several GB, so it takes a while), keeps only words with Persian translations and writes the small file `lexicon/en-fa.jsonl.gz`. Commit that file so every deployment has it:
+This downloads the full English Wiktionary file (several GB, so make sure you have the disk space) to `lexicon/kaikki-English.jsonl`. If the connection drops, it resumes where it stopped, and if you run the command again later it reuses a finished download. It then keeps only words with Persian translations and writes the small file `lexicon/en-fa.jsonl.gz`. Afterwards you can delete `lexicon/kaikki-English.jsonl`. Commit the small file so every deployment has it:
 
 ```bash
 git add lexicon/en-fa.jsonl.gz && git commit -m "Add offline dictionary data" && git push

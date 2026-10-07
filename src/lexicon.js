@@ -83,12 +83,21 @@ export function convertEntry(entry) {
   };
 }
 
-// Merges every part of speech of a word into one lexicon record.
-export async function* buildLexicon(lines) {
+// Merges every part of speech of a word into one lexicon record. Lines that
+// aren't valid JSON are skipped and counted in stats.badLines.
+export async function* buildLexicon(lines, stats = {}) {
   const byWord = new Map();
+  stats.badLines = 0;
   for await (const line of lines) {
     if (!line.trim()) continue;
-    const converted = convertEntry(JSON.parse(line));
+    let entry;
+    try {
+      entry = JSON.parse(line);
+    } catch {
+      stats.badLines++;
+      continue;
+    }
+    const converted = convertEntry(entry);
     if (!converted) continue;
     const key = converted.word.toLowerCase();
     const prev = byWord.get(key);
