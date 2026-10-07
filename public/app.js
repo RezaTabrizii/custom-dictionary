@@ -117,7 +117,7 @@ function renderDetail() {
       <h2>${esc(pos)}</h2>
       <ol class="senses">${senses.map((s) => `
         <li class="sense">
-          <p class="meaning" lang="fa" dir="rtl">${esc(s.persian.join("، "))}</p>
+          ${s.persian.length ? `<p class="meaning" lang="fa" dir="rtl">${esc(s.persian.join("، "))}</p>` : ""}
           <p class="definition">${esc(s.definition)}</p>
           ${s.example ? `<p class="example">${esc(s.example)}</p>` : ""}
         </li>`).join("")}
@@ -141,6 +141,7 @@ function renderDetail() {
           <span>${esc(w.phonetic)}</span>
         </div>
       </header>
+      ${w.senses.some((s) => s.persian.length) ? "" : `<p class="no-persian">No Persian meaning was found for this word.</p>`}
       ${sensesHtml}
       <section class="mine">
         <h2>Your sentences</h2>

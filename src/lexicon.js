@@ -2,10 +2,9 @@ import { createHash } from "node:crypto";
 import { createReadStream, existsSync, readFileSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { createGunzip } from "node:zlib";
-import { LookupError } from "./lookup.js";
 
 // Converts kaikki.org (Wiktionary) English entries into the compact offline
-// lexicon, and looks words up in it. One lexicon line looks like:
+// lexicon, which supplies Persian meanings when there is no Claude API key. One lexicon line looks like:
 // {"word":"run","phonetic":"/rʌn/","forms":["ran","runs"],"senses":[{partOfSpeech, persian, definition, example}]}
 
 export const LEXICON_FILE = new URL("../lexicon/en-fa.jsonl.gz", import.meta.url);
@@ -24,7 +23,7 @@ const MAX_PERSIAN = 4;
 const isPersian = (t) => (t.code === "fa" || t.lang === "Persian" || t.lang === "Iranian Persian")
   && typeof t.word === "string" && /[؀-ۿ]/.test(t.word);
 
-const tokens = (s = "") => new Set(s.toLowerCase().match(/[a-z]{3,}/g)?.filter((w) => !STOP.has(w)));
+export const tokens = (s = "") => new Set(s.toLowerCase().match(/[a-z]{3,}/g)?.filter((w) => !STOP.has(w)));
 
 function shortExample(sense) {
   const texts = (sense.examples ?? []).map((e) => e.text?.trim()).filter((t) => t && t.length <= 160);
@@ -116,12 +115,4 @@ export async function loadLexicon(db, file = LEXICON_FILE) {
   }
   db.importLexicon(records, version);
   return records.length;
-}
-
-export function createOfflineLookup(db) {
-  return async function lookup(word) {
-    const entry = db.findInLexicon(word);
-    if (!entry) throw new LookupError(`"${word}" isn't in the offline dictionary.`);
-    return entry;
-  };
 }

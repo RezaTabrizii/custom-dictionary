@@ -18,7 +18,8 @@ public/                  the app: plain HTML, CSS and JavaScript, no build step
 src/app.js               the API (Express)
 src/db.js                storage: one SQLite file
 src/lookup.js            word lookup with Claude (when an API key is set)
-src/lexicon.js           free offline word lookup (kaikki.org / Wiktionary data)
+src/freeLookup.js        free word lookup: Free Dictionary API + offline Persian
+src/lexicon.js           the offline Persian data (kaikki.org / Wiktionary)
 scripts/build-lexicon.js builds the offline data file
 lexicon/en-fa.jsonl.gz   the offline data file, once you've built it
 ```
@@ -27,13 +28,20 @@ When you add a word, the server looks it up and stores the answer in SQLite. Wor
 
 ### Where meanings come from
 
-| | Offline dictionary (free) | Claude (paid) |
-|---|---|---|
-| Used when | `ANTHROPIC_API_KEY` is **not** set | `ANTHROPIC_API_KEY` is set |
-| Cost | Free | About $0.01 per new word |
-| Coverage | Words that have Persian translations on English Wiktionary. Some meanings have no example sentence. | Almost any word, every meaning with Persian and an example |
-| Inflected forms | "ran" finds "run" | Same |
-| Spelling or speech mistakes | Not corrected | Corrected |
+**With a Claude API key** (`ANTHROPIC_API_KEY` set), Claude provides everything: word types, Persian meanings, definitions and examples. It costs about $0.01 per new word and corrects spelling and speech mistakes.
+
+**Without a key**, it's free and combines two sources:
+
+| | Source |
+|---|---|
+| Word types, English definitions, examples, pronunciation | [Free Dictionary API](https://dictionaryapi.dev) (online, no key) |
+| Persian meanings | The offline dictionary (kaikki.org / Wiktionary data) |
+
+Each English meaning gets the Persian of the offline meaning with the same word type and the closest definition. Inflected forms are looked up by their base word ("ran" finds "run"). If one source has nothing:
+
+- **Free Dictionary doesn't have the word, or can't be reached:** the English comes from the offline dictionary too.
+- **The offline dictionary doesn't have the word:** it's saved with English only, and its page says no Persian meaning was found.
+- **Neither has it:** you get a "not found" message.
 
 ## Set up the free offline dictionary
 
@@ -59,7 +67,7 @@ You need Node.js 22.13 or newer.
 
 ```bash
 npm install
-cp .env.example .env    # optional: add a Claude API key; leave it empty to use the free offline dictionary
+cp .env.example .env    # optional: add a Claude API key; leave it empty for the free lookup
 npm run dev
 ```
 
@@ -72,7 +80,7 @@ Run the tests with `npm test`.
 The app is a single Node server, and your dictionary lives in one file (`data/dictionary.db`). Any host that runs Node or Docker **and keeps a persistent disk** will do, for example Fly.io, Railway or Render (with a disk), or your own VPS.
 
 1. Set the environment variables:
-   - `ANTHROPIC_API_KEY`: optional; leave it unset to use the free offline dictionary
+   - `ANTHROPIC_API_KEY`: optional; leave it unset for the free lookup
    - `APP_PASSWORD`: set one, so strangers can't use your dictionary or your API key
    - `DATA_DIR`: a folder on the persistent disk (the Docker image uses `/data`)
 2. Deploy with the included `Dockerfile`, or run `npm ci --omit=dev && npm start`.
@@ -86,6 +94,8 @@ The app is a single Node server, and your dictionary lives in one file (`data/di
 Vazhe then opens full screen like any other app. If you later want it in the Play Store, the same site can be wrapped as a Trusted Web Activity with [Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap), with no code changes.
 
 ## Credits
+
+English definitions without a key: [Free Dictionary API](https://dictionaryapi.dev), from Wiktionary.
 
 Offline dictionary data: [Wiktionary](https://en.wiktionary.org) via [kaikki.org](https://kaikki.org), under CC BY-SA 4.0 and GFDL.
 

@@ -350,6 +350,11 @@ button { cursor: pointer; }
 }
 .pron .icon-btn { margin-left: -8px; }
 
+.no-persian {
+  margin: -12px 0 24px;
+  color: var(--muted);
+}
+
 .pos-group + .pos-group { margin-top: 32px; }
 .pos-group h2 {
   margin: 0 0 12px;

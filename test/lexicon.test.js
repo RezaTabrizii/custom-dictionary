@@ -5,8 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 import { openDb } from "../src/db.js";
-import { buildLexicon, createOfflineLookup, loadLexicon, readLines } from "../src/lexicon.js";
-import { LookupError } from "../src/lookup.js";
+import { buildLexicon, loadLexicon, readLines } from "../src/lexicon.js";
 
 const FIXTURE = new URL("./fixtures/kaikki-sample.jsonl", import.meta.url);
 
@@ -40,7 +39,7 @@ test("uses translations stored on the sense itself, and drops senses without Per
   ]);
 });
 
-test("fills the database once and looks words up offline, including inflected forms", async () => {
+test("fills the database once and finds words offline, including inflected forms", async () => {
   const dir = mkdtempSync(join(tmpdir(), "vazhe-"));
   const file = join(dir, "en-fa.jsonl.gz");
   writeFileSync(file, gzipSync((await build()).map((r) => JSON.stringify(r)).join("\n")));
@@ -52,16 +51,15 @@ test("fills the database once and looks words up offline, including inflected fo
   assert.equal(await loadLexicon(db, file), 2); // a restart doesn't re-import
   assert.equal(db.lexiconVersion(), version);
 
-  const lookup = createOfflineLookup(db);
-  assert.equal((await lookup("run")).senses.length, 3);
-  assert.equal((await lookup("RAN")).word, "run");
-  assert.equal((await lookup("bright")).senses[0].persian[0], "روشن");
-  await assert.rejects(lookup("zyzzyva"), LookupError);
+  assert.equal(db.findInLexicon("run").senses.length, 3);
+  assert.equal(db.findInLexicon("RAN").word, "run");
+  assert.equal(db.findInLexicon("bright").senses[0].persian[0], "روشن");
+  assert.equal(db.findInLexicon("zyzzyva"), undefined);
 
   // A changed file replaces the offline data and keeps the user's words.
   writeFileSync(file, gzipSync(JSON.stringify((await build())[1])));
   assert.equal(await loadLexicon(db, file), 1);
-  await assert.rejects(lookup("run"), LookupError);
+  assert.equal(db.findInLexicon("run"), undefined);
   assert.equal(db.listWords().length, 1);
 });
 
