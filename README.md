@@ -77,6 +77,20 @@ Open http://localhost:3000.
 
 Run the tests with `npm test`.
 
+### Use it on your phone while it runs on your PC
+
+1. Connect the phone to the same Wi-Fi as the PC.
+2. Start the app. It prints an address like `on your network: http://192.168.1.20:3000`.
+3. Open that address in Chrome on the phone. If it doesn't load, allow Node.js through the firewall on private networks (Windows asks the first time; otherwise Windows Security → Firewall → Allow an app).
+
+Over plain `http://` with an IP address, Chrome blocks the microphone and the *Install app* option. To allow them for your PC's address, on the phone:
+
+1. Open `chrome://flags/#unsafely-treat-insecure-origin-as-secure`.
+2. Enter the exact address, for example `http://192.168.1.20:3000`, and set the flag to **Enabled**.
+3. Tap **Relaunch**.
+
+The address can change when the PC reconnects to Wi-Fi. If it does, update the flag with the new one.
+
 ## Put it online
 
 The app is a single Node server, and your dictionary lives in one file (`data/dictionary.db`). Any host that runs Node or Docker **and keeps a persistent disk** will do, for example Fly.io, Railway or Render (with a disk), or your own VPS.
