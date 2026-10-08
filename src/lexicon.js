@@ -231,10 +231,11 @@ export function readLines(stream, gzipped) {
 
 // Fills the lexicon table from the bundled file on first run, and again only
 // when the file has changed.
-export async function loadLexicon(db, file = LEXICON_FILE) {
+export async function loadLexicon(db, file = LEXICON_FILE, commonFile = COMMON_WORDS_FILE) {
   if (!existsSync(file)) return db.lexiconSize();
+  const hash = (f) => (existsSync(f) ? createHash("sha256").update(readFileSync(f)).digest("hex") : "");
   // Includes the cleanup version, so a file built before a cleanup change is cleaned on load.
-  const version = `${createHash("sha256").update(readFileSync(file)).digest("hex")}:${CLEANUP_VERSION}`;
+  const version = `${hash(file)}:${hash(commonFile)}:${CLEANUP_VERSION}`;
   if (db.lexiconVersion() === version) return db.lexiconSize();
 
   const records = [];
@@ -244,6 +245,14 @@ export async function loadLexicon(db, file = LEXICON_FILE) {
     const record = JSON.parse(line);
     if (record.base) families.push(record);
     else records.push({ ...record, senses: cleanSenses(record.senses) });
+  }
+
+  // Leaves rare words out of the families, also for files built before the
+  // build did this itself.
+  if (existsSync(commonFile)) {
+    const usable = new Set(records.map((r) => r.word.toLowerCase()));
+    for await (const w of readLines(createReadStream(commonFile), true)) usable.add(w.trim());
+    for (const f of families) f.derived = usable.has(f.base) ? f.derived.filter((w) => usable.has(w)) : [];
   }
   db.importLexicon(records, version, families);
   return records.length;

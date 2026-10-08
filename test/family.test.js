@@ -2,7 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createApp } from "../src/app.js";
 import { openDb } from "../src/db.js";
-import { buildLexicon, derivesFrom } from "../src/lexicon.js";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { gzipSync } from "node:zlib";
+import { buildLexicon, derivesFrom, loadLexicon } from "../src/lexicon.js";
 
 // Minimal kaikki.org entries: "quick" has Persian; its relatives may not.
 const sense = (gloss, extra = {}) => ({ glosses: [gloss], ...extra });
@@ -74,6 +78,21 @@ test("an adjective's -ly and -ness words join its family even when Wiktionary do
   const records = [];
   for await (const r of buildLexicon(lines)) records.push(r);
   assert.deepEqual(records.filter((r) => r.base), [{ base: "swift", derived: ["swiftly", "swiftness"] }]);
+});
+
+test("loading leaves rare words out of families, also from files built without the filter", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "vazhe-"));
+  const file = join(dir, "lexicon.jsonl.gz");
+  const commonFile = join(dir, "common.txt.gz");
+  const lines = [
+    { word: "kind", phonetic: "", forms: [], senses: [{ partOfSpeech: "adjective", persian: ["مهربان"], definition: "Nice.", example: "" }] },
+    { base: "kind", derived: ["kindly", "kindness", "kindful", "kindship"] },
+  ];
+  writeFileSync(file, gzipSync(lines.map((l) => JSON.stringify(l)).join("\n")));
+  writeFileSync(commonFile, gzipSync("kindly\nkindness\n"));
+  const db = openDb();
+  await loadLexicon(db, file, commonFile);
+  assert.deepEqual(db.wordFamily("kind").members, ["kindly", "kindness"]);
 });
 
 test("a family is found from any of its words, nearest first", async () => {
