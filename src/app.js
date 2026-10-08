@@ -1,6 +1,7 @@
 import express from "express";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { InvalidMove } from "./db.js";
 import { LookupError, PARTS_OF_SPEECH } from "./lookup.js";
 
 const PUBLIC_DIR = fileURLToPath(new URL("../public", import.meta.url));
@@ -9,6 +10,7 @@ const MAX_SENTENCE = 400;
 const MAX_SENSES = 30;
 const MAX_PERSIAN = 12; // meanings per sense
 const MAX_MEANING = 80;
+const MAX_GROUP_NAME = 60;
 
 const digest = (s) => createHash("sha256").update(s).digest();
 
@@ -74,6 +76,64 @@ export function createApp({ db, lookup, password = "" }) {
     word ? res.json(word) : notFound(res);
   });
 
+  /* ---------- Groups ---------- */
+
+  // Every change to the groups answers with the whole tree: the groups, and
+  // which group each word is in.
+  const changeTree = (res, change) => {
+    try {
+      const result = change();
+      res.json({ ...db.tree(), ...result });
+    } catch (err) {
+      if (!(err instanceof InvalidMove)) throw err;
+      res.status(400).json({ error: err.message });
+    }
+  };
+
+  api.get("/tree", (req, res) => {
+    res.json(db.tree());
+  });
+
+  // Makes a group from a word or group dropped onto a word.
+  api.post("/groups", (req, res) => {
+    const name = clean(req.body?.name) || "New group";
+    const parentId = groupRef(req.body?.parentId);
+    const items = Array.isArray(req.body?.items) ? req.body.items.map(itemRef) : [];
+    if (name.length > MAX_GROUP_NAME || parentId === undefined || items.length < 1 || items.includes(null)) {
+      return res.status(400).json({ error: "Couldn't make that group." });
+    }
+    changeTree(res, () => ({ created: db.createGroup(name, parentId, items) }));
+  });
+
+  // Renames a group, or moves it into another group (parentId, null for the top level).
+  api.patch("/groups/:id", (req, res) => {
+    const id = Number(req.params.id);
+    const body = req.body ?? {};
+    changeTree(res, () => {
+      if ("name" in body) {
+        const name = clean(body.name);
+        if (!name || name.length > MAX_GROUP_NAME) throw new InvalidMove("Give the group a name up to 60 letters long.");
+        db.renameGroup(id, name);
+      }
+      if ("parentId" in body) {
+        const parentId = groupRef(body.parentId);
+        if (parentId === undefined) throw new InvalidMove("That group doesn't exist.");
+        db.move({ kind: "group", id }, parentId);
+      }
+    });
+  });
+
+  // Removes a group but keeps what's in it, one level up.
+  api.delete("/groups/:id", (req, res) => {
+    changeTree(res, () => db.ungroup(Number(req.params.id)));
+  });
+
+  api.put("/words/:id/group", (req, res) => {
+    const groupId = groupRef(req.body?.groupId);
+    if (groupId === undefined) return res.status(400).json({ error: "That group doesn't exist." });
+    changeTree(res, () => db.move({ kind: "word", id: Number(req.params.id) }, groupId));
+  });
+
   api.delete("/examples/:id", (req, res) => {
     db.deleteExample(Number(req.params.id)) ? res.status(204).end() : notFound(res);
   });
@@ -84,6 +144,17 @@ export function createApp({ db, lookup, password = "" }) {
 
 function clean(value) {
   return typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
+}
+
+// A group id, null for the top level, or undefined when it isn't valid.
+function groupRef(value) {
+  if (value === null || value === undefined) return null;
+  return Number.isInteger(value) && value > 0 ? value : undefined;
+}
+
+// { kind, id } of a word or group from the request, or null.
+function itemRef(value) {
+  return ["word", "group"].includes(value?.kind) && Number.isInteger(value?.id) ? { kind: value.kind, id: value.id } : null;
 }
 
 // A valid list of senses from the request, or null.

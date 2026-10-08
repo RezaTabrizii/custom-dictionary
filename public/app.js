@@ -1,3 +1,5 @@
+import { makeDraggable } from "./drag.js";
+
 const $ = (sel) => document.querySelector(sel);
 
 const els = {
@@ -14,6 +16,8 @@ const els = {
   pwDialog: $("#password-dialog"),
   pwForm: $("#password-form"),
   pwInput: $("#password-input"),
+  dropTop: $("#drop-top"),
+  menu: $("#group-menu"),
 };
 
 const POS_SHORT = {
@@ -25,8 +29,10 @@ const POS_SHORT = {
 const POS_NAMES = Object.keys(POS_SHORT);
 
 let words = [];
+let groups = []; // { id, name, parentId }; a word's groupId says which group it's in
 let pending = null; // the word currently being looked up
 let editing = null; // index of the meaning being edited, "new" for a new one, or null
+let renaming = null; // { id, isNew } of the group whose name is being typed
 
 /* ---------- API ---------- */
 
@@ -34,6 +40,10 @@ const storage = {
   get: (k) => { try { return localStorage.getItem(k) ?? ""; } catch { return ""; } },
   set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
 };
+
+// Groups the user has closed, remembered on this device.
+const collapsed = new Set(JSON.parse(storage.get("collapsed") || "[]"));
+const saveCollapsed = () => storage.set("collapsed", JSON.stringify([...collapsed]));
 
 async function api(path, { method = "GET", body } = {}) {
   const res = await fetch(`api${path}`, {
@@ -78,23 +88,82 @@ function matches(w, q) {
   return w.word.toLowerCase().includes(q) || w.senses.some((s) => s.persian.some((p) => p.includes(q)));
 }
 
-function renderList() {
-  const q = els.input.value.trim().toLowerCase();
-  const shown = words.filter((w) => matches(w, q));
-  const selected = selectedId();
+const query = () => els.input.value.trim().toLowerCase();
+const byName = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base", numeric: true });
+const touchFirst = matchMedia("(hover: none)").matches;
 
+function wordHtml(w, selected) {
+  return `<li data-kind="word" data-id="${w.id}"><a class="word-row" href="#${w.id}" draggable="false" ${w.id === selected ? 'aria-current="true"' : ""}>
+      <span class="w">${esc(w.word)}<span class="pos">${esc(posList(w))}</span></span>
+      <span class="fa" lang="fa" dir="rtl">${esc(firstPersian(w))}</span>
+    </a></li>`;
+}
+
+const firstPersian = (w) => w.senses.find((s) => s.persian.length)?.persian[0] ?? "";
+
+function groupHtml(g, inner, count, forceOpen) {
+  const open = forceOpen || !collapsed.has(g.id);
+  const head = renaming?.id === g.id
+    ? `<form class="group-rename" data-id="${g.id}" autocomplete="off">
+        ${icon("folder")}
+        <input name="name" type="text" maxlength="60" enterkeyhint="done" aria-label="Group name"
+               placeholder="Name this group" value="${renaming.isNew ? "" : esc(g.name)}">
+        <button class="icon-btn" type="submit" data-keep-focus aria-label="Save the name">${icon("check")}</button>
+        <button class="icon-btn" type="button" data-action="cancel-rename" data-keep-focus
+                aria-label="${renaming.isNew ? "Undo this group" : "Keep the old name"}">${icon("x")}</button>
+      </form>`
+    : `<button class="group-toggle" type="button" data-action="toggle-group" aria-expanded="${open}">
+        ${icon("caret-right")}${icon("folder")}<span class="group-name">${esc(g.name)}</span>
+      </button>
+      <span class="group-count" aria-label="${count === 1 ? "1 word" : `${count} words`}">${count}</span>
+      <button class="icon-btn group-menu" type="button" data-action="group-menu" aria-label="Options for ${esc(g.name)}" aria-haspopup="menu">${icon("dots-three")}</button>`;
+  return `<li class="group${open ? "" : " collapsed"}" data-kind="group" data-id="${g.id}">
+      <div class="group-head">${head}</div>
+      <div class="group-body" ${open ? "" : "inert"}><ul class="group-children">${inner}</ul></div>
+    </li>`;
+}
+
+function renderList() {
+  const q = query();
+  const selected = selectedId();
+  const groupsIn = Map.groupBy(groups, (g) => g.parentId);
+  const wordsIn = Map.groupBy(words, (w) => w.groupId);
+
+  // One level of the tree: its groups (A to Z) then its words (newest first).
+  // While searching, a group shows when its name or anything inside it matches.
+  function level(parentId, showAll) {
+    let html = "";
+    let shown = 0;
+    let total = 0;
+    for (const g of (groupsIn.get(parentId) ?? []).toSorted(byName)) {
+      const nameMatches = Boolean(q) && g.name.toLowerCase().includes(q);
+      const inner = level(g.id, showAll || nameMatches);
+      total += inner.total;
+      if (!showAll && !nameMatches && !inner.shown) continue;
+      shown += inner.shown;
+      html += groupHtml(g, inner.html, inner.total, Boolean(q));
+    }
+    for (const w of wordsIn.get(parentId) ?? []) {
+      total++;
+      if (!showAll && !matches(w, q)) continue;
+      shown++;
+      html += wordHtml(w, selected);
+    }
+    return { html, shown, total };
+  }
+  const tree = level(null, !q);
+
+  const hint = !q && !groups.length && words.length >= 2
+    ? `<li class="list-hint">${touchFirst ? "Hold a word and drag it onto another" : "Drag a word onto another"} to put them in a group.</li>`
+    : "";
   els.list.innerHTML =
     (pending ? `<li><div class="word-row pending">
         <span class="w">Looking up "${esc(pending)}"…</span><span class="skeleton"></span>
-      </div></li>` : "") +
-    shown.map((w) => `<li><a class="word-row" href="#${w.id}" ${w.id === selected ? 'aria-current="true"' : ""}>
-        <span class="w">${esc(w.word)}<span class="pos">${esc(posList(w))}</span></span>
-        <span class="fa" lang="fa" dir="rtl">${esc(w.senses.find((s) => s.persian.length)?.persian[0] ?? "")}</span>
-      </a></li>`).join("");
+      </div></li>` : "") + tree.html + hint;
 
   els.count.textContent = words.length === 1 ? "1 word" : `${words.length} words`;
 
-  if (pending || shown.length) {
+  if (pending || tree.shown) {
     els.empty.hidden = true;
   } else if (!words.length) {
     els.empty.hidden = false;
@@ -103,6 +172,12 @@ function renderList() {
   } else {
     els.empty.hidden = false;
     els.empty.innerHTML = `<p>No saved word matches "${esc(els.input.value.trim())}". Press Add to look it up.</p>`;
+  }
+
+  if (renaming) {
+    const input = els.list.querySelector(".group-rename input");
+    input?.focus({ preventScroll: true });
+    input?.closest(".group").scrollIntoView({ block: "nearest", behavior: "smooth" });
   }
 }
 
@@ -114,8 +189,8 @@ function renderDetail() {
     return;
   }
 
-  const groups = Map.groupBy(w.senses.map((s, i) => ({ ...s, i })), (s) => s.partOfSpeech);
-  const sensesHtml = [...groups].map(([pos, senses]) => `
+  const byPos = Map.groupBy(w.senses.map((s, i) => ({ ...s, i })), (s) => s.partOfSpeech);
+  const sensesHtml = [...byPos].map(([pos, senses]) => `
     <section class="pos-group">
       <h2>${esc(pos)}</h2>
       <ol class="senses">${senses.map((s) => s.i === editing ? `
@@ -170,9 +245,29 @@ function renderDetail() {
         </form>
       </section>
       <footer class="entry-foot">
+        ${groups.length ? `<label class="group-picker">${icon("folder")}<span class="sr-only">Group</span>
+          <select class="input" name="group" aria-label="Group">
+            <option value="">No group</option>
+            ${groupPaths().map(([id, path]) => `<option value="${id}" ${id === w.groupId ? "selected" : ""}>${esc(path)}</option>`).join("")}
+          </select>
+        </label>` : ""}
         <button class="btn danger" type="button" data-action="delete-word">${icon("trash")}<span>Delete word</span></button>
       </footer>
     </article>`;
+}
+
+// Every group as [id, "Parent / Child"], in tree order.
+function groupPaths() {
+  const groupsIn = Map.groupBy(groups, (g) => g.parentId);
+  const out = [];
+  const walk = (parentId, prefix) => {
+    for (const g of (groupsIn.get(parentId) ?? []).toSorted(byName)) {
+      out.push([g.id, prefix + g.name]);
+      walk(g.id, `${prefix}${g.name} / `);
+    }
+  };
+  walk(null, "");
+  return out;
 }
 
 function senseForm(s, index) {
@@ -336,11 +431,22 @@ els.detail.addEventListener("click", async (e) => {
     try {
       await api(`/words/${w.id}`, { method: "DELETE" });
       words = words.filter((x) => x.id !== w.id);
+      groups = (await api("/tree")).groups; // a group left empty is gone
       select(null);
       render();
     } catch (err) {
       alert(err.message);
     }
+  }
+});
+
+els.detail.addEventListener("change", async (e) => {
+  if (e.target.name !== "group") return;
+  const id = selectedId();
+  const groupId = e.target.value ? Number(e.target.value) : null;
+  if (await changeTree(`/words/${id}/group`, "PUT", { groupId })) {
+    render();
+    showLanded({ kind: "word", id });
   }
 });
 
@@ -355,6 +461,273 @@ addEventListener("hashchange", () => {
   render();
   if (selectedId()) els.detail.focus({ preventScroll: true });
   els.detail.scrollTop = 0;
+});
+
+/* ---------- Groups ---------- */
+
+// Takes the server's answer to a change: the groups and each word's group.
+function applyTree(tree) {
+  groups = tree.groups;
+  const groupOf = new Map(tree.words.map((w) => [w.id, w.groupId]));
+  words = words.map((w) => ({ ...w, groupId: groupOf.get(w.id) ?? null }));
+}
+
+const groupById = (id) => groups.find((g) => g.id === id);
+
+// Whether group `id` is `ancestor` or inside it.
+function isWithin(id, ancestor) {
+  for (let g = id; g != null; g = groupById(g)?.parentId) if (g === ancestor) return true;
+  return false;
+}
+
+const itemOf = (li) => ({ kind: li.dataset.kind, id: Number(li.dataset.id) });
+const parentOf = ({ kind, id }) => (kind === "word" ? words.find((w) => w.id === id)?.groupId : groupById(id)?.parentId) ?? null;
+
+async function changeTree(path, method, body) {
+  try {
+    const tree = await api(path, { method, body });
+    applyTree(tree);
+    return tree;
+  } catch (err) {
+    setStatus(err.message, true);
+    return null;
+  }
+}
+
+// Briefly highlights an item in its new place, or the closed group it went into.
+function showLanded({ kind, id }) {
+  let li = els.list.querySelector(`li[data-kind="${kind}"][data-id="${id}"]`);
+  while (li?.closest(".group.collapsed")) li = li.closest(".group.collapsed");
+  li?.classList.add("landed");
+  li?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+function setOpen(li, open) {
+  const id = Number(li.dataset.id);
+  li.classList.toggle("collapsed", !open);
+  li.querySelector(":scope > .group-head .group-toggle")?.setAttribute("aria-expanded", String(open));
+  li.querySelector(":scope > .group-body").inert = !open;
+  open ? collapsed.delete(id) : collapsed.add(id);
+  saveCollapsed();
+}
+
+async function saveGroupName(form) {
+  const id = Number(form.dataset.id);
+  const name = form.elements.name.value.trim();
+  renaming = null;
+  if (name && name !== groupById(id)?.name) await changeTree(`/groups/${id}`, "PATCH", { name });
+  renderList();
+  els.list.querySelector(`li[data-kind="group"][data-id="${id}"] .group-toggle`)?.focus({ preventScroll: true });
+}
+
+async function cancelRename() {
+  const { id, isNew } = renaming;
+  renaming = null;
+  // Undoing a new group puts its words back where they were.
+  if (isNew) await changeTree(`/groups/${id}`, "DELETE");
+  renderList();
+}
+
+function startRename(id, isNew = false) {
+  renaming = { id, isNew };
+  renderList();
+}
+
+els.list.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-action]");
+  if (!btn) return;
+  const li = btn.closest(".group");
+  if (btn.dataset.action === "toggle-group") setOpen(li, li.classList.contains("collapsed"));
+  if (btn.dataset.action === "group-menu") openMenu(btn, Number(li.dataset.id));
+  if (btn.dataset.action === "cancel-rename") cancelRename();
+});
+
+els.list.addEventListener("submit", (e) => {
+  if (!e.target.classList.contains("group-rename")) return;
+  e.preventDefault();
+  saveGroupName(e.target);
+});
+
+// Leaving the name field saves it, as Enter does.
+els.list.addEventListener("focusout", (e) => {
+  const form = e.target.closest?.(".group-rename");
+  if (form && renaming?.id === Number(form.dataset.id) && !form.contains(e.relatedTarget)) saveGroupName(form);
+});
+
+els.list.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && e.target.closest(".group-rename") && renaming) {
+    e.preventDefault();
+    cancelRename();
+  }
+});
+
+// The name field's buttons don't take focus, so pressing them doesn't save first.
+els.list.addEventListener("pointerdown", (e) => {
+  if (e.target.closest("[data-keep-focus]")) e.preventDefault();
+});
+
+/* Group menu */
+
+let menuGroup = null;
+
+function openMenu(btn, id) {
+  menuGroup = id;
+  const r = btn.getBoundingClientRect();
+  els.menu.hidden = false;
+  const below = r.bottom + els.menu.offsetHeight + 8 < innerHeight;
+  els.menu.style.top = `${below ? r.bottom + 4 : r.top - els.menu.offsetHeight - 4}px`;
+  els.menu.style.left = `${Math.max(8, r.right - els.menu.offsetWidth)}px`;
+  els.menu.querySelector("button").focus();
+}
+
+function closeMenu() {
+  if (els.menu.hidden) return;
+  els.menu.hidden = true;
+  menuGroup = null;
+}
+
+els.menu.addEventListener("click", async (e) => {
+  const choice = e.target.closest("[data-menu]")?.dataset.menu;
+  const id = menuGroup;
+  if (!choice) return;
+  closeMenu();
+  if (choice === "rename") startRename(id);
+  if (choice === "ungroup") {
+    const inside = [
+      ...words.filter((w) => w.groupId === id).map((w) => ({ kind: "word", id: w.id })),
+      ...groups.filter((g) => g.parentId === id).map((g) => ({ kind: "group", id: g.id })),
+    ];
+    if (await changeTree(`/groups/${id}`, "DELETE")) {
+      render();
+      inside.forEach(showLanded);
+    }
+  }
+});
+
+document.addEventListener("pointerdown", (e) => {
+  if (!els.menu.hidden && !els.menu.contains(e.target) && !e.target.closest(".group-menu")) closeMenu();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !els.menu.hidden) closeMenu();
+});
+addEventListener("resize", closeMenu);
+addEventListener("scroll", closeMenu, true);
+
+/* Moving words and groups by drag and drop */
+
+let target = null; // what a drop would do right now
+let springTimer = null; // opens a closed group the pointer rests on
+let springId = null;
+
+// What dropping `item` at x, y would do, or null if nothing (or nothing useful).
+function dropTargetAt(item, x, y) {
+  const hit = document.elementFromPoint(x, y);
+  if (!hit) return null;
+  if (hit.closest("#drop-top")) return toGroup(item, null, els.dropTop);
+  if (!els.list.contains(hit)) return null;
+
+  const li = hit.closest("li[data-kind]");
+  if (!li) return toGroup(item, null, els.list); // empty space in the list
+  const r = li.getBoundingClientRect();
+
+  if (li.dataset.kind === "word") {
+    const w = words.find((x) => x.id === Number(li.dataset.id));
+    const edge = Math.min(r.height * 0.22, 12);
+    // The middle of a word makes a group; its top or bottom edge means "at this level".
+    if (y > r.top + edge && y < r.bottom - edge) return combineWith(item, w, li);
+    return toGroup(item, w.groupId, w.groupId ? li.parentElement.closest(".group") : els.list);
+  }
+
+  const id = Number(li.dataset.id);
+  const head = li.querySelector(":scope > .group-head");
+  const hr = head.getBoundingClientRect();
+  if (head.contains(hit) && y < hr.top + Math.min(hr.height * 0.22, 10)) {
+    const parentId = groupById(id).parentId;
+    return toGroup(item, parentId, parentId ? li.parentElement.closest(".group") : els.list);
+  }
+  return toGroup(item, id, li, head.contains(hit));
+}
+
+function combineWith(item, w, li) {
+  if (item.kind === "word" && item.id === w.id) return null;
+  if (item.kind === "group" && isWithin(w.groupId, item.id)) return null;
+  return { type: "combine", word: w, el: li, label: `New group with “${w.word}”` };
+}
+
+function toGroup(item, groupId, el, onHead = false) {
+  if (item.kind === "group" && isWithin(groupId, item.id)) return null;
+  if (groupId === parentOf(item)) return null; // already there
+  const label = groupId === null ? "Move to the top level" : `Move into “${groupById(groupId).name}”`;
+  return { type: "move", groupId, el, onHead, label };
+}
+
+function clearDropMarks() {
+  document.querySelectorAll(".drop-combine, .drop-into, .drop-root").forEach((el) =>
+    el.classList.remove("drop-combine", "drop-into", "drop-root"));
+}
+
+function springOpen(t) {
+  const id = t?.type === "move" && t.onHead && t.el.classList.contains("collapsed") ? t.groupId : null;
+  if (id === springId) return;
+  clearTimeout(springTimer);
+  springId = id;
+  if (id) springTimer = setTimeout(() => setOpen(t.el, true), 650);
+}
+
+makeDraggable(els.list, {
+  items: "li[data-kind]",
+  // Groups are dragged by their header; nothing moves while searching or naming.
+  canDrag: (li, e) => !query() && !pending && !renaming && !e.target.closest(".group-menu")
+    && (li.dataset.kind === "word" || e.target.closest(".group-head")?.parentElement === li),
+  ghost: (li) => {
+    const item = itemOf(li);
+    if (item.kind === "group") {
+      const g = groupById(item.id);
+      return `${icon("folder")}<span class="w">${esc(g.name)}</span><span class="group-count">${li.querySelector(".group-count").textContent}</span>`;
+    }
+    const w = words.find((x) => x.id === item.id);
+    return `<span class="w">${esc(w.word)}</span><span class="fa" lang="fa" dir="rtl">${esc(firstPersian(w))}</span>`;
+  },
+  over: (li, x, y) => {
+    const item = itemOf(li);
+    document.documentElement.classList.toggle("dragging-nested", parentOf(item) !== null);
+    clearDropMarks();
+    target = dropTargetAt(item, x, y);
+    springOpen(target);
+    if (!target) return null;
+    if (target.type === "combine") target.el.classList.add("drop-combine");
+    else if (target.groupId === null) target.el.classList.add("drop-root");
+    else target.el.classList.add("drop-into");
+    // The top-level zone says what it does itself.
+    return { label: target.el === els.dropTop ? "" : target.label, ok: true };
+  },
+  end: () => {
+    clearDropMarks();
+    springOpen(null);
+    document.documentElement.classList.remove("dragging-nested");
+  },
+  drop: async (li) => {
+    const item = itemOf(li);
+    const t = target;
+    if (t.type === "combine") {
+      const tree = await changeTree("/groups", "POST", {
+        parentId: t.word.groupId,
+        items: [item, { kind: "word", id: t.word.id }],
+      });
+      if (!tree) return;
+      collapsed.delete(tree.created);
+      startRename(tree.created, true);
+      els.list.querySelector(`li[data-kind="group"][data-id="${tree.created}"]`)?.classList.add("landed");
+      return;
+    }
+    const ok = item.kind === "word"
+      ? await changeTree(`/words/${item.id}/group`, "PUT", { groupId: t.groupId })
+      : await changeTree(`/groups/${item.id}`, "PATCH", { parentId: t.groupId });
+    if (!ok) return;
+    render();
+    showLanded(item);
+  },
+  scroller: () => (matchMedia("(min-width: 900px)").matches ? els.list : document.scrollingElement),
 });
 
 /* ---------- Pronunciation ---------- */
@@ -427,7 +800,7 @@ if (Recognition) {
 
 async function load() {
   try {
-    words = await api("/words");
+    [words, { groups }] = await Promise.all([api("/words"), api("/tree")]);
   } catch (err) {
     setStatus(err.message, true);
   }

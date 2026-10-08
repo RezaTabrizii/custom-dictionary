@@ -1,6 +1,9 @@
 import { DatabaseSync } from "node:sqlite";
 import { cleanSenses, CLEANUP_VERSION } from "./persian.js";
 
+// A move that would put a group inside itself, or refers to something missing.
+export class InvalidMove extends Error {}
+
 // One SQLite file holds the whole dictionary. Senses come from the lookup and
 // are stored as JSON; the user's own sentences live in their own table.
 export function openDb(file = ":memory:") {
@@ -13,6 +16,12 @@ export function openDb(file = ":memory:") {
       phonetic   TEXT NOT NULL DEFAULT '',
       senses     TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    -- The user's groups of words; a group can sit inside another group.
+    CREATE TABLE IF NOT EXISTS groups (
+      id        INTEGER PRIMARY KEY,
+      name      TEXT NOT NULL,
+      parent_id INTEGER REFERENCES groups(id)
     );
     CREATE TABLE IF NOT EXISTS examples (
       id         INTEGER PRIMARY KEY,
@@ -41,6 +50,9 @@ export function openDb(file = ":memory:") {
     const columns = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name);
     if (!columns.includes("audio")) db.exec(`ALTER TABLE ${table} ADD COLUMN audio TEXT NOT NULL DEFAULT ''`);
   }
+  if (!db.prepare("PRAGMA table_info(words)").all().some((c) => c.name === "group_id")) {
+    db.exec("ALTER TABLE words ADD COLUMN group_id INTEGER REFERENCES groups(id)");
+  }
 
   const q = {
     all: db.prepare("SELECT * FROM words ORDER BY id DESC"),
@@ -53,6 +65,19 @@ export function openDb(file = ":memory:") {
     remove: db.prepare("DELETE FROM words WHERE id = ?"),
     insertExample: db.prepare("INSERT INTO examples (word_id, text) VALUES (?, ?)"),
     removeExample: db.prepare("DELETE FROM examples WHERE id = ?"),
+    groups: db.prepare("SELECT id, name, parent_id FROM groups ORDER BY id"),
+    placements: db.prepare("SELECT id, group_id FROM words"),
+    groupById: db.prepare("SELECT id, name, parent_id FROM groups WHERE id = ?"),
+    insertGroup: db.prepare("INSERT INTO groups (name, parent_id) VALUES (?, ?)"),
+    renameGroup: db.prepare("UPDATE groups SET name = ? WHERE id = ?"),
+    setGroupParent: db.prepare("UPDATE groups SET parent_id = ? WHERE id = ?"),
+    setWordGroup: db.prepare("UPDATE words SET group_id = ? WHERE id = ?"),
+    liftWords: db.prepare("UPDATE words SET group_id = ? WHERE group_id = ?"),
+    liftGroups: db.prepare("UPDATE groups SET parent_id = ? WHERE parent_id = ?"),
+    removeGroup: db.prepare("DELETE FROM groups WHERE id = ?"),
+    removeEmptyGroups: db.prepare(`
+      DELETE FROM groups WHERE id NOT IN (SELECT group_id FROM words WHERE group_id IS NOT NULL)
+        AND id NOT IN (SELECT parent_id FROM groups WHERE parent_id IS NOT NULL)`),
     lexiconSize: db.prepare("SELECT count(*) AS n FROM lexicon"),
     metaGet: db.prepare("SELECT value FROM meta WHERE key = ?"),
     metaSet: db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)"),
@@ -84,7 +109,50 @@ export function openDb(file = ":memory:") {
     senses: JSON.parse(row.senses),
     examples: examples.map(({ id, text }) => ({ id, text })),
     createdAt: row.created_at,
+    groupId: row.group_id ?? null,
   });
+
+  function transaction(fn) {
+    db.exec("BEGIN");
+    try {
+      const result = fn();
+      // A group that loses its last word or group goes away.
+      while (q.removeEmptyGroups.run().changes);
+      db.exec("COMMIT");
+      return result;
+    } catch (err) {
+      db.exec("ROLLBACK");
+      throw err;
+    }
+  }
+
+  // Checks that a group exists (null is the top level).
+  function existingGroup(id) {
+    if (id === null) return null;
+    const group = q.groupById.get(id);
+    if (!group) throw new InvalidMove("That group doesn't exist.");
+    return group;
+  }
+
+  // Whether group `id` is `ancestor` or somewhere inside it.
+  function isWithin(id, ancestor) {
+    for (let g = id; g !== null; g = q.groupById.get(g)?.parent_id ?? null) {
+      if (g === ancestor) return true;
+    }
+    return false;
+  }
+
+  // Puts a word or a group into a group (null is the top level).
+  function place({ kind, id }, groupId) {
+    if (kind === "word") {
+      if (!q.byId.get(id)) throw new InvalidMove("That word doesn't exist.");
+      q.setWordGroup.run(groupId, id);
+    } else {
+      existingGroup(id);
+      if (groupId !== null && isWithin(groupId, id)) throw new InvalidMove("A group can't go inside itself.");
+      q.setGroupParent.run(groupId, id);
+    }
+  }
 
   return {
     listWords() {
@@ -109,7 +177,44 @@ export function openDb(file = ":memory:") {
       return this.getWord(id);
     },
     deleteWord(id) {
-      return q.remove.run(id).changes > 0;
+      return transaction(() => q.remove.run(id).changes > 0);
+    },
+
+    // The groups, and which group each word is in.
+    tree() {
+      return {
+        groups: q.groups.all().map((g) => ({ id: g.id, name: g.name, parentId: g.parent_id ?? null })),
+        words: q.placements.all().map((w) => ({ id: w.id, groupId: w.group_id ?? null })),
+      };
+    },
+    // Makes a group inside `parentId` holding `items` ({ kind: "word" | "group", id }).
+    createGroup(name, parentId, items) {
+      return transaction(() => {
+        existingGroup(parentId);
+        const id = Number(q.insertGroup.run(name, parentId).lastInsertRowid);
+        for (const item of items) place(item, id);
+        return id;
+      });
+    },
+    renameGroup(id, name) {
+      existingGroup(id);
+      q.renameGroup.run(name, id);
+    },
+    // Moves a word or a group into a group, or to the top level with null.
+    move(item, groupId) {
+      transaction(() => {
+        existingGroup(groupId);
+        place(item, groupId);
+      });
+    },
+    // Removes a group; what was in it moves up to the group's own parent.
+    ungroup(id) {
+      transaction(() => {
+        const group = existingGroup(id);
+        q.liftWords.run(group.parent_id, id);
+        q.liftGroups.run(group.parent_id, id);
+        q.removeGroup.run(id);
+      });
     },
     addExample(wordId, text) {
       q.insertExample.run(wordId, text);

@@ -11,6 +11,7 @@ Your own English to Persian dictionary. It starts empty and you fill it.
 - **Hear each word** pronounced. The speaker button plays a real recording from Wiktionary when one exists; otherwise it uses your phone's or browser's built-in voice.
 - **Add your own sentences** under any word, typed or spoken.
 - **Fill in or correct meanings.** A meaning without Persian has an *Add Persian meaning* button, and the pencil next to any meaning lets you change its Persian (typed or spoken), word type, definition and example, or delete it. *Add a meaning* adds one of your own.
+- **Group your words** by dragging one onto another: a new group holds both, and you name it right away. Drop words or groups onto a group to move them in; groups can sit inside groups. Use the *Move to the top level* zone that appears over the search box, or a row's top or bottom edge, to move something out. On a phone, hold a word for a moment, then drag. Each group's ⋯ menu renames or ungroups it, and a word's page has a group picker too.
 - **Search** your words in English or Persian from the same box.
 - **Works on the web and Android.** It's a Progressive Web App: open it in Chrome on your phone and choose *Install app*. It also opens offline, showing your last saved words.
 
@@ -18,6 +19,7 @@ Your own English to Persian dictionary. It starts empty and you fill it.
 
 ```
 public/                  the app: plain HTML, CSS and JavaScript, no build step
+public/drag.js           drag and drop for mouse, touch and pen
 src/app.js               the API (Express)
 src/db.js                storage: one SQLite file
 src/lookup.js            word lookup with Claude (when an API key is set)

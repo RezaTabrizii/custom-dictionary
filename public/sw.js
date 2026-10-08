@@ -1,7 +1,7 @@
 // Network first, so the dictionary is always current online; the last copy is
 // served from the cache when offline.
-const CACHE = "vazhe-v1";
-const SHELL = ["./", "index.html", "styles.css", "app.js", "icons.svg", "manifest.webmanifest",
+const CACHE = "vazhe-v2";
+const SHELL = ["./", "index.html", "styles.css", "app.js", "drag.js", "icons.svg", "manifest.webmanifest",
   "fonts/geist.woff2", "fonts/geist-italic.woff2", "fonts/vazirmatn.woff2"];
 
 self.addEventListener("install", (e) => {

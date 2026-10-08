@@ -336,6 +336,255 @@ button { cursor: pointer; }
 }
 @keyframes shimmer { 50% { opacity: 0.4; } }
 
+/* ---------- Groups ---------- */
+
+.word-row, .group-head {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.group-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 52px;
+  padding-right: 4px;
+  border-radius: var(--radius-control);
+  transition: background-color 0.15s;
+}
+.group-head:hover { background: var(--surface-2); }
+
+.group-toggle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: stretch;
+  padding: 0 4px 0 8px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  text-align: left;
+}
+.group-toggle > .icon:first-child {
+  width: 14px;
+  height: 14px;
+  color: var(--muted);
+  transform: rotate(90deg);
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.group.collapsed .group-toggle > .icon:first-child { transform: none; }
+.group-toggle > .icon:nth-child(2), .group-rename > .icon { color: var(--accent); }
+.group-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  font-size: 17px;
+}
+
+.group-count {
+  min-width: 24px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+.group-menu { width: 36px; height: 36px; margin: 0; }
+@media (hover: hover) {
+  .group-menu { opacity: 0; }
+  .group-head:hover .group-menu, .group-menu:focus-visible, .group-menu[aria-expanded="true"] { opacity: 1; }
+}
+
+/* Opening and closing slides the contents rather than snapping. */
+.group-body {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.group.collapsed > .group-body { grid-template-rows: 0fr; }
+.group-children {
+  min-height: 0;
+  overflow: hidden;
+  list-style: none;
+  margin: 0 0 0 19px;
+  padding: 0 0 0 10px;
+  border-left: 1.5px solid var(--line);
+}
+.group.collapsed > .group-body > .group-children { visibility: hidden; transition: visibility 0s 0.28s; }
+
+.group-rename {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 30px;
+}
+.group-rename input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  margin-left: 4px;
+  padding: 0 10px;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 16px;
+  font-weight: 600;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.group-rename input:focus { outline: none; }
+.group-rename input::placeholder { color: var(--muted); font-weight: 400; }
+.group-rename .icon-btn { width: 40px; height: 40px; margin: 0; }
+
+.list-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-control);
+  color: var(--muted);
+  font-size: 14px;
+}
+.word-list li.list-hint { border-top: 1px dashed var(--line); }
+
+/* ---------- Dragging ---------- */
+
+html.dragging, html.dragging * { cursor: grabbing !important; }
+html.dragging .word-row:hover, html.dragging .group-head:hover { background: transparent; }
+
+/* A held finger shrinks the row a little, so it's clear something is about to happen. */
+.pressing > .word-row, .pressing > .group-head {
+  transform: scale(0.97);
+  background: var(--surface-2);
+  transition: transform 0.36s ease-out, background-color 0.36s;
+}
+
+.drag-source > .word-row, .drag-source > .group-head, .drag-source > .group-body { opacity: 0.35; }
+
+.drag-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  pointer-events: none;
+  will-change: transform;
+}
+.drag-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  box-shadow: 0 2px 4px rgb(19 26 38 / 0.08), 0 16px 40px rgb(19 26 38 / 0.18);
+  transform: rotate(-1.5deg) scale(1.03);
+  transition: opacity 0.15s, transform 0.15s;
+}
+.drag-card .w { font-weight: 600; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.drag-card .fa { margin-left: auto; color: var(--muted); white-space: nowrap; }
+.drag-card .group-count { margin-left: auto; }
+.drag-card > .icon { color: var(--accent); }
+.drag-ghost.can-drop .drag-card { border-color: var(--accent); }
+.drag-ghost.dropped .drag-card { opacity: 0; transform: scale(0.9); }
+.drag-ghost.returning .drag-card { opacity: 0; transform: scale(0.96); }
+
+.drag-label {
+  width: max-content;
+  max-width: 100%;
+  margin: 0 0 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  box-shadow: var(--shadow);
+}
+.drag-label[hidden] { display: block; visibility: hidden; }
+
+/* Where the drop will land */
+.drop-combine > .word-row {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.group.drop-into {
+  border-radius: var(--radius-control);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.group.drop-into > .group-head:hover { background: transparent; }
+.word-list.drop-root {
+  border-radius: var(--radius-control);
+  box-shadow: inset 0 0 0 2px var(--accent);
+  background: var(--accent-soft);
+}
+
+.composer-wrap { position: relative; }
+.drop-top {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--accent);
+  font-weight: 600;
+}
+html.dragging-nested .drop-top { display: flex; }
+.drop-top.drop-root { background: var(--accent); color: var(--accent-ink); border-style: solid; }
+
+/* A word or group that just moved shows where it went. */
+.landed > .word-row, .landed > .group-head { animation: landed 1.4s ease-out; }
+@keyframes landed {
+  0%, 30% { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
+  100% { background: transparent; box-shadow: inset 0 0 0 2px transparent; }
+}
+
+/* ---------- Group menu ---------- */
+
+.menu {
+  position: fixed;
+  z-index: 50;
+  min-width: 220px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.menu button {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  font-weight: 500;
+}
+.menu button:hover, .menu button:focus-visible { background: var(--surface-2); outline: none; }
+.menu .icon { color: var(--muted); margin-top: 1px; }
+.menu small { display: block; color: var(--muted); font-size: 13px; font-weight: 400; }
+
 .empty {
   margin-top: 32px;
   padding: 0 4px;
@@ -530,7 +779,21 @@ textarea.input { resize: vertical; line-height: 1.5; }
 .sentence-form .row { display: flex; gap: 8px; }
 .sentence-form .field input { padding-left: 14px; }
 
-.entry-foot { margin-top: 48px; }
+.entry-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 48px;
+}
+.group-picker {
+  position: relative;
+  flex: 1 1 220px;
+  max-width: 320px;
+  display: flex;
+  align-items: center;
+}
+.group-picker .icon { position: absolute; left: 14px; color: var(--accent); pointer-events: none; }
+.group-picker select { padding-left: 42px; }
 
 @media (max-width: 600px) {
   .sentence-form .row { flex-direction: column; }

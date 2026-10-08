@@ -23,6 +23,7 @@
         <span class="count" id="count"></span>
       </header>
 
+      <div class="composer-wrap">
       <form class="composer" id="add-form" autocomplete="off">
         <label class="sr-only" for="word-input">English word</label>
         <div class="field">
@@ -39,6 +40,11 @@
           <span>Add</span>
         </button>
       </form>
+      <div class="drop-top" id="drop-top" aria-hidden="true">
+        <svg class="icon" aria-hidden="true"><use href="icons.svg#i-arrow-up"/></svg>
+        <span>Move to the top level</span>
+      </div>
+      </div>
       <p class="status" id="status" role="status" aria-live="polite"></p>
 
       <ul class="word-list" id="word-list"></ul>
@@ -51,6 +57,15 @@
         <p>Pick a word to see its meanings.</p>
       </div>
     </main>
+  </div>
+
+  <div class="menu" id="group-menu" role="menu" aria-label="Group options" hidden>
+    <button type="button" role="menuitem" data-menu="rename">
+      <svg class="icon" aria-hidden="true"><use href="icons.svg#i-pencil"/></svg><span>Rename</span>
+    </button>
+    <button type="button" role="menuitem" data-menu="ungroup">
+      <svg class="icon" aria-hidden="true"><use href="icons.svg#i-folder"/></svg><span>Ungroup<small>Keeps the words, one level up</small></span>
+    </button>
   </div>
 
   <dialog class="password" id="password-dialog">
