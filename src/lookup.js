@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-const PARTS_OF_SPEECH = [
+export const PARTS_OF_SPEECH = [
   "noun", "verb", "adjective", "adverb", "pronoun", "preposition",
   "conjunction", "interjection", "determiner", "phrasal verb", "idiom", "other",
 ];

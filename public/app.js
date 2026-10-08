@@ -22,8 +22,11 @@ const POS_SHORT = {
   determiner: "det.", "phrasal verb": "phr. v.", idiom: "idiom", other: "",
 };
 
+const POS_NAMES = Object.keys(POS_SHORT);
+
 let words = [];
 let pending = null; // the word currently being looked up
+let editing = null; // index of the meaning being edited, "new" for a new one, or null
 
 /* ---------- API ---------- */
 
@@ -86,7 +89,7 @@ function renderList() {
       </div></li>` : "") +
     shown.map((w) => `<li><a class="word-row" href="#${w.id}" ${w.id === selected ? 'aria-current="true"' : ""}>
         <span class="w">${esc(w.word)}<span class="pos">${esc(posList(w))}</span></span>
-        <span class="fa" lang="fa" dir="rtl">${esc(w.senses[0]?.persian[0] ?? "")}</span>
+        <span class="fa" lang="fa" dir="rtl">${esc(w.senses.find((s) => s.persian.length)?.persian[0] ?? "")}</span>
       </a></li>`).join("");
 
   els.count.textContent = words.length === 1 ? "1 word" : `${words.length} words`;
@@ -111,18 +114,26 @@ function renderDetail() {
     return;
   }
 
-  const groups = Map.groupBy(w.senses, (s) => s.partOfSpeech);
+  const groups = Map.groupBy(w.senses.map((s, i) => ({ ...s, i })), (s) => s.partOfSpeech);
   const sensesHtml = [...groups].map(([pos, senses]) => `
     <section class="pos-group">
       <h2>${esc(pos)}</h2>
-      <ol class="senses">${senses.map((s) => `
+      <ol class="senses">${senses.map((s) => s.i === editing ? `
+        <li class="sense editing">${senseForm(s, s.i)}</li>` : `
         <li class="sense">
-          ${s.persian.length ? `<p class="meaning" lang="fa" dir="rtl">${esc(s.persian.join("، "))}</p>` : ""}
-          <p class="definition">${esc(s.definition)}</p>
+          ${s.persian.length
+            ? `<p class="meaning" lang="fa" dir="rtl">${esc(s.persian.join("، "))}</p>`
+            : `<button class="add-fa" type="button" data-action="edit-sense" data-index="${s.i}">${icon("plus")}<span>Add Persian meaning</span></button>`}
+          ${s.definition ? `<p class="definition">${esc(s.definition)}</p>` : ""}
           ${s.example ? `<p class="example">${esc(s.example)}</p>` : ""}
+          <button class="icon-btn sense-edit" type="button" data-action="edit-sense" data-index="${s.i}" aria-label="Edit this meaning">${icon("pencil")}</button>
         </li>`).join("")}
       </ol>
     </section>`).join("");
+
+  const newSenseHtml = editing === "new"
+    ? `<section class="pos-group new-sense"><h2>New meaning</h2>${senseForm({ partOfSpeech: w.senses[0]?.partOfSpeech ?? "noun", persian: [], definition: "", example: "" }, "new")}</section>`
+    : `<button class="btn quiet add-sense" type="button" data-action="edit-sense" data-index="new">${icon("plus")}<span>Add a meaning</span></button>`;
 
   const mineHtml = w.examples.length
     ? `<ul class="mine-list">${w.examples.map((e) => `
@@ -141,8 +152,9 @@ function renderDetail() {
           <span>${esc(w.phonetic)}</span>
         </div>
       </header>
-      ${w.senses.some((s) => s.persian.length) ? "" : `<p class="no-persian">No Persian meaning was found for this word.</p>`}
+      ${w.senses.some((s) => s.persian.length) || editing !== null ? "" : `<p class="no-persian">No Persian meaning was found for this word. You can add your own.</p>`}
       ${sensesHtml}
+      ${newSenseHtml}
       <section class="mine">
         <h2>Your sentences</h2>
         ${mineHtml}
@@ -161,6 +173,32 @@ function renderDetail() {
         <button class="btn danger" type="button" data-action="delete-word">${icon("trash")}<span>Delete word</span></button>
       </footer>
     </article>`;
+}
+
+function senseForm(s, index) {
+  return `<form class="sense-form" data-index="${index}" autocomplete="off">
+    <label><span>Persian meanings <span class="hint">separate them with commas</span></span>
+      <span class="field">
+        <input id="persian-input" name="persian" type="text" lang="fa" dir="rtl" maxlength="400" value="${esc(s.persian.join("، "))}">
+        <button class="icon-btn mic" type="button" data-mic-for="persian-input" aria-label="Say a Persian meaning" ${Recognition ? "" : "hidden"}>${icon("microphone")}</button>
+      </span>
+    </label>
+    <label>Word type
+      <select class="input" name="partOfSpeech">${POS_NAMES.map((p) => `<option ${p === s.partOfSpeech ? "selected" : ""}>${p}</option>`).join("")}</select>
+    </label>
+    <label><span>Definition <span class="hint">in English</span></span>
+      <textarea class="input" name="definition" rows="2" maxlength="400">${esc(s.definition)}</textarea>
+    </label>
+    <label>Example
+      <textarea class="input" name="example" rows="2" maxlength="400">${esc(s.example)}</textarea>
+    </label>
+    <p class="form-error" role="alert"></p>
+    <div class="actions">
+      <button class="btn primary" type="submit">Save</button>
+      <button class="btn quiet" type="button" data-action="cancel-edit">Cancel</button>
+      ${index === "new" ? "" : `<button class="btn danger" type="button" data-action="delete-sense" data-index="${index}">${icon("trash")}<span>Delete meaning</span></button>`}
+    </div>
+  </form>`;
 }
 
 function render() {
@@ -203,6 +241,23 @@ async function addWord(raw) {
   }
 }
 
+function editSense(index) {
+  editing = index;
+  renderDetail();
+  $(".sense-form [name=persian]")?.focus();
+}
+
+async function saveSenses(w, senses, form) {
+  try {
+    const updated = await api(`/words/${w.id}/senses`, { method: "PUT", body: { senses } });
+    editing = null;
+    replaceWord({ ...w, senses: updated.senses });
+  } catch (err) {
+    if (form) form.querySelector(".form-error").textContent = err.message;
+    else alert(err.message);
+  }
+}
+
 function replaceWord(updated) {
   words = words.map((w) => (w.id === updated.id ? updated : w));
   render();
@@ -219,6 +274,25 @@ els.input.addEventListener("input", () => {
 });
 
 els.detail.addEventListener("submit", async (e) => {
+  if (e.target.classList.contains("sense-form")) {
+    e.preventDefault();
+    const form = e.target;
+    const w = words.find((x) => x.id === selectedId());
+    const f = form.elements;
+    const sense = {
+      partOfSpeech: f.partOfSpeech.value,
+      persian: f.persian.value.split(/[,،;؛]/).map((p) => p.trim()).filter(Boolean),
+      definition: f.definition.value.trim(),
+      example: f.example.value.trim(),
+    };
+    if (!sense.persian.length && !sense.definition) {
+      form.querySelector(".form-error").textContent = "Add a Persian meaning or a definition.";
+      return f.persian.focus();
+    }
+    const index = form.dataset.index;
+    const senses = index === "new" ? [...w.senses, sense] : w.senses.map((s, i) => (i === Number(index) ? sense : s));
+    return saveSenses(w, senses, form);
+  }
   if (e.target.id !== "sentence-form") return;
   e.preventDefault();
   const input = e.target.elements.text;
@@ -239,6 +313,16 @@ els.detail.addEventListener("click", async (e) => {
   if (!w) return;
 
   if (btn.dataset.action === "speak") pronounce(w);
+  if (btn.dataset.action === "edit-sense") editSense(btn.dataset.index === "new" ? "new" : Number(btn.dataset.index));
+  if (btn.dataset.action === "cancel-edit") {
+    editing = null;
+    renderDetail();
+  }
+  if (btn.dataset.action === "delete-sense") {
+    if (!confirm("Delete this meaning?")) return;
+    const index = Number(btn.dataset.index);
+    await saveSenses(w, w.senses.filter((_, i) => i !== index), btn.form);
+  }
   if (btn.dataset.action === "delete-example") {
     try {
       await api(`/examples/${btn.dataset.id}`, { method: "DELETE" });
@@ -260,7 +344,14 @@ els.detail.addEventListener("click", async (e) => {
   }
 });
 
+els.detail.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape" || editing === null) return;
+  editing = null;
+  renderDetail();
+});
+
 addEventListener("hashchange", () => {
+  editing = null;
   render();
   if (selectedId()) els.detail.focus({ preventScroll: true });
   els.detail.scrollTop = 0;
@@ -304,7 +395,7 @@ if (Recognition) {
     const isWord = input === els.input;
     const before = input.value;
     recognition = new Recognition();
-    recognition.lang = "en-US";
+    recognition.lang = input.lang === "fa" ? "fa-IR" : "en-US";
     recognition.interimResults = true;
     btn.classList.add("listening");
     btn.setAttribute("aria-pressed", "true");
@@ -312,7 +403,7 @@ if (Recognition) {
     let heard = "";
     recognition.onresult = (ev) => {
       heard = [...ev.results].map((r) => r[0].transcript).join("");
-      input.value = isWord ? heard : `${before} ${heard}`.trim();
+      input.value = isWord || !before.trim() ? heard : `${before}${input.lang === "fa" ? "،" : ""} ${heard}`;
       if (isWord) renderList();
     };
     recognition.onerror = (ev) => {

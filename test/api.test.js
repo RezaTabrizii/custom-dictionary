@@ -85,3 +85,22 @@ test("validates input", async () => {
   assert.equal((await call("/words", { method: "POST", body: { word: "" } })).status, 400);
   assert.equal((await call("/words/999/examples", { method: "POST", body: { text: "Hi." } })).status, 404);
 });
+
+test("saves the user's own meanings", async () => {
+  const word = await (await call("/words", { method: "POST", body: { word: "run" } })).json();
+  const senses = [
+    { ...word.senses[0], persian: ["دَویدن", " فرار کردن ", "دویدن"] }, // cleaned like looked-up Persian
+    { partOfSpeech: "noun", persian: ["مسیر"], definition: "", example: "" }, // a Persian meaning alone is enough
+  ];
+  let res = await call(`/words/${word.id}/senses`, { method: "PUT", body: { senses } });
+  assert.equal(res.status, 200);
+  const saved = await res.json();
+  assert.deepEqual(saved.senses.map((s) => s.persian), [["دویدن", "فرار کردن"], ["مسیر"]]);
+  assert.deepEqual((await (await call("/words")).json()).find((w) => w.id === word.id).senses, saved.senses);
+
+  const empty = { partOfSpeech: "verb", persian: [], definition: " ", example: "" };
+  assert.equal((await call(`/words/${word.id}/senses`, { method: "PUT", body: { senses: [empty] } })).status, 400);
+  assert.equal((await call(`/words/${word.id}/senses`, { method: "PUT", body: { senses: "no" } })).status, 400);
+  assert.equal((await call("/words/999/senses", { method: "PUT", body: { senses } })).status, 404);
+  await call(`/words/${word.id}`, { method: "DELETE" });
+});

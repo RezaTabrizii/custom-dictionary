@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { openDb } from "../src/db.js";
-import { createFreeLookup, englishSources, withRecording } from "../src/freeLookup.js";
+import { addPersian, createFreeLookup, englishSources, withRecording } from "../src/freeLookup.js";
 import { LookupError } from "../src/lookup.js";
 
 // Offline lexicon records, as built from kaikki.org data.
@@ -102,4 +102,20 @@ test("adds a recording to Claude's answers, from the offline data or the first s
   assert.equal((await lookup("bright")).audio, "https://upload.wikimedia.org/bright.mp3");
   assert.equal((await lookup("run")).audio, RUN.audio);
   assert.equal((await lookup("qwzx")).audio, "");
+});
+
+test("offline Persian that matches no definition goes to senses still without Persian", () => {
+  const offline = [
+    { partOfSpeech: "verb", persian: ["دویدن"], definition: "To move swiftly on foot.", example: "" },
+    { partOfSpeech: "verb", persian: ["اداره کردن"], definition: "To manage a business.", example: "" },
+    { partOfSpeech: "verb", persian: ["جاری شدن"], definition: "Of a liquid, to flow.", example: "" },
+  ];
+  const senses = [
+    { partOfSpeech: "verb", persian: [], definition: "to go faster than a walk", example: "" },
+    { partOfSpeech: "verb", persian: [], definition: "to move swiftly", example: "" },
+    { partOfSpeech: "noun", persian: [], definition: "an act of running", example: "" },
+  ];
+  // The second sense matches "دویدن"; the first gets the first unused verb meaning.
+  // Nouns have no offline Persian, so they stay empty.
+  assert.deepEqual(addPersian(senses, offline).map((s) => s.persian), [["اداره کردن"], ["دویدن"], []]);
 });

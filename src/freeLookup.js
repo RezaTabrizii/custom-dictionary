@@ -19,6 +19,7 @@ export function englishSources({ merriamWebsterKey = "", fetchImpl = fetch } = {
 // Gives each English sense the Persian of the offline sense with the same word
 // type whose definition shares the most words with it.
 export function addPersian(senses, offlineSenses) {
+  const used = new Set();
   for (const sense of senses) {
     const words = tokens(sense.definition);
     let best = null;
@@ -27,15 +28,19 @@ export function addPersian(senses, offlineSenses) {
       const score = [...tokens(o.definition)].filter((w) => words.has(w)).length;
       if (score > bestScore) [best, bestScore] = [o, score];
     }
-    if (best) sense.persian = [...best.persian];
-  }
-  // A word type that has offline Persian but no matching definition still shows
-  // it, on its first sense.
-  for (const pos of new Set(offlineSenses.map((o) => o.partOfSpeech))) {
-    const ofPos = senses.filter((s) => s.partOfSpeech === pos);
-    if (ofPos.length && ofPos.every((s) => !s.persian.length)) {
-      ofPos[0].persian = [...offlineSenses.find((o) => o.partOfSpeech === pos).persian];
+    if (best) {
+      sense.persian = [...best.persian];
+      used.add(best);
     }
+  }
+  // Offline meanings that matched no definition aren't dropped: they go, in
+  // order, to the senses of their word type that still have no Persian.
+  for (const pos of new Set(offlineSenses.map((o) => o.partOfSpeech))) {
+    const empty = senses.filter((s) => s.partOfSpeech === pos && !s.persian.length);
+    const unused = offlineSenses.filter((o) => o.partOfSpeech === pos && !used.has(o));
+    empty.forEach((s, i) => {
+      if (unused[i]) s.persian = [...unused[i].persian];
+    });
   }
   return senses;
 }

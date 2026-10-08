@@ -67,7 +67,7 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-button, input { font: inherit; color: inherit; }
+button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 
 :focus-visible {
@@ -374,6 +374,7 @@ button { cursor: pointer; }
   counter-increment: sense;
   position: relative;
   padding-left: 32px;
+  padding-right: 44px;
 }
 .sense + .sense { margin-top: 24px; }
 .sense::before {
@@ -402,6 +403,74 @@ button { cursor: pointer; }
   color: var(--ink);
 }
 .definition { margin: 0 0 8px; }
+
+.sense-edit {
+  position: absolute;
+  top: -2px;
+  right: -10px;
+}
+
+.add-fa {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  margin: 0 0 8px;
+  padding: 0 14px 0 10px;
+  border: 1px dashed var(--accent);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 550;
+}
+.add-fa .icon { width: 16px; height: 16px; }
+
+.add-sense { margin-top: 28px; }
+
+/* ---------- Editing a meaning ---------- */
+
+.sense.editing { padding: 0; }
+.sense.editing::before { display: none; }
+.new-sense { margin-top: 32px; }
+
+.sense-form {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface-2);
+}
+.sense-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.sense-form .hint { color: var(--muted); font-weight: 400; }
+.sense-form .field input {
+  height: 48px;
+  padding: 0 14px;
+  font: 500 18px var(--font-fa);
+}
+.input {
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  font-size: 16px;
+  font-weight: 400;
+  transition: border-color 0.15s;
+}
+.input:focus { outline: none; border-color: var(--accent); }
+textarea.input { resize: vertical; line-height: 1.5; }
+.form-error { margin: 0; color: var(--danger); font-size: 14px; }
+.form-error:empty { display: none; }
+.sense-form .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.sense-form .actions .danger { margin-left: auto; }
 .example {
   margin: 0;
   padding-left: 12px;

@@ -49,6 +49,7 @@ export function openDb(file = ":memory:") {
     byWord: db.prepare("SELECT * FROM words WHERE word = ?"),
     examplesOf: db.prepare("SELECT * FROM examples WHERE word_id = ? ORDER BY id"),
     insert: db.prepare("INSERT INTO words (word, phonetic, audio, senses) VALUES (?, ?, ?, ?)"),
+    updateSenses: db.prepare("UPDATE words SET senses = ? WHERE id = ?"),
     remove: db.prepare("DELETE FROM words WHERE id = ?"),
     insertExample: db.prepare("INSERT INTO examples (word_id, text) VALUES (?, ?)"),
     removeExample: db.prepare("DELETE FROM examples WHERE id = ?"),
@@ -101,6 +102,11 @@ export function openDb(file = ":memory:") {
     addWord({ word, phonetic, audio = "", senses }) {
       const { lastInsertRowid } = q.insert.run(word, phonetic, audio, JSON.stringify(cleanSenses(senses)));
       return this.getWord(Number(lastInsertRowid));
+    },
+    // Replaces a word's meanings with the user's edited ones.
+    updateSenses(id, senses) {
+      if (!q.updateSenses.run(JSON.stringify(cleanSenses(senses)), id).changes) return null;
+      return this.getWord(id);
     },
     deleteWord(id) {
       return q.remove.run(id).changes > 0;
