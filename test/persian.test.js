@@ -14,6 +14,6 @@ test("uses Persian letter forms", () => {
 
 test("saved words are cleaned too", () => {
   const db = openDb();
-  const w = db.addWord({ word: "book", phonetic: "", senses: [{ partOfSpeech: "noun", persian: ["کِتَاب", "کتاب"], definition: "", example: "" }] });
+  const w = db.forUser(db.createUser("reza", "not-a-real-hash")).addWord({ word: "book", phonetic: "", senses: [{ partOfSpeech: "noun", persian: ["کِتَاب", "کتاب"], definition: "", example: "" }] });
   assert.deepEqual(w.senses[0].persian, ["کتاب"]);
 });

@@ -26,7 +26,17 @@ console.log(process.env.ANTHROPIC_API_KEY
   ? "Word lookups use Claude."
   : `Word lookups use ${sources.map((s) => s.name).join(", then ")} for English, and the offline dictionary for Persian.`);
 
-const app = createApp({ db, lookup, password: process.env.APP_PASSWORD ?? "" });
+// TRUST_PROXY: set when an https proxy sits in front (most hosts), e.g. "1".
+const trust = process.env.TRUST_PROXY ?? "";
+const trustProxy = /^\d+$/.test(trust) ? Number(trust) : trust === "true" ? true : trust || false;
+const signupCode = process.env.SIGNUP_CODE ?? "";
+const app = createApp({ db, lookup, signupCode, trustProxy });
+console.log(signupCode
+  ? "New accounts need the invite code in SIGNUP_CODE."
+  : db.userCount()
+    ? "Sign-up is closed (set SIGNUP_CODE to let others create accounts)."
+    : "Open the app to create the first account; it gets the words saved so far.");
+if (process.env.APP_PASSWORD) console.warn("APP_PASSWORD is no longer used: everyone signs in with their own account.");
 
 const port = Number(process.env.PORT ?? 3000);
 app.listen(port, () => {

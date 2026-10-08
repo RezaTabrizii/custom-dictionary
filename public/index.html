@@ -15,12 +15,49 @@
   <script type="module" src="app.js"></script>
 </head>
 <body>
-  <div class="app">
+  <main class="auth" id="auth" hidden>
+    <div class="auth-card">
+      <div class="auth-brand">
+        <span class="mark" aria-hidden="true">و</span>
+        <span class="brand-name">Vazhe</span>
+      </div>
+      <h1 id="auth-title">Sign in</h1>
+      <p class="auth-lead" id="auth-lead">Your own English to Persian dictionary.</p>
+      <form id="auth-form" novalidate>
+        <label for="auth-username">Username</label>
+        <input class="input" id="auth-username" name="username" type="text" autocomplete="username"
+               autocapitalize="off" spellcheck="false" maxlength="32" required>
+        <label for="auth-password">Password</label>
+        <div class="field">
+          <input id="auth-password" name="password" type="password" autocomplete="current-password" maxlength="200" required>
+          <button class="icon-btn" type="button" id="auth-reveal" aria-label="Show password" aria-pressed="false">
+            <svg class="icon" aria-hidden="true"><use href="icons.svg#i-eye"/></svg>
+          </button>
+        </div>
+        <p class="auth-hint" id="auth-password-hint" hidden>At least 8 characters.</p>
+        <div id="auth-code-row" hidden>
+          <label for="auth-code">Invite code</label>
+          <input class="input" id="auth-code" name="code" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="200">
+        </div>
+        <p class="form-error" id="auth-error" role="alert"></p>
+        <button class="btn primary" type="submit" id="auth-submit">Sign in</button>
+      </form>
+      <p class="auth-switch" id="auth-switch">
+        <span id="auth-switch-text">New here?</span>
+        <button class="link-btn" type="button" id="auth-toggle">Create an account</button>
+      </p>
+    </div>
+  </main>
+
+  <div class="app" hidden>
     <section class="list-pane" aria-label="Your words">
       <header class="brand">
         <span class="mark" aria-hidden="true">و</span>
         <span class="brand-name">Vazhe</span>
         <span class="count" id="count"></span>
+        <button class="icon-btn account-btn" type="button" id="account-btn" aria-label="Account" aria-haspopup="menu" aria-expanded="false">
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#i-user"/></svg>
+        </button>
       </header>
 
       <div class="composer-wrap">
@@ -68,13 +105,29 @@
     </button>
   </div>
 
-  <dialog class="password" id="password-dialog">
-    <form method="dialog" id="password-form">
-      <h2>Enter your password</h2>
-      <p>This dictionary is private.</p>
-      <label for="password-input">Password</label>
-      <input id="password-input" type="password" autocomplete="current-password" required>
-      <button class="btn primary" type="submit">Open dictionary</button>
+  <div class="menu" id="account-menu" role="menu" aria-labelledby="account-btn" hidden>
+    <p class="menu-note">Signed in as <strong id="account-name"></strong></p>
+    <button type="button" role="menuitem" data-account="password">
+      <svg class="icon" aria-hidden="true"><use href="icons.svg#i-key"/></svg><span>Change password</span>
+    </button>
+    <button type="button" role="menuitem" data-account="sign-out">
+      <svg class="icon" aria-hidden="true"><use href="icons.svg#i-sign-out"/></svg><span>Sign out</span>
+    </button>
+  </div>
+
+  <dialog class="password" id="password-dialog" aria-labelledby="password-title">
+    <form id="password-form" novalidate>
+      <h2 id="password-title">Change password</h2>
+      <p>You'll stay signed in here; other devices are signed out.</p>
+      <label for="current-password">Current password</label>
+      <input id="current-password" name="current" type="password" autocomplete="current-password" maxlength="200" required>
+      <label for="new-password">New password</label>
+      <input id="new-password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="200" required>
+      <p class="form-error" role="alert"></p>
+      <div class="dialog-actions">
+        <button class="btn quiet" type="button" value="cancel" data-close>Cancel</button>
+        <button class="btn primary" type="submit">Change password</button>
+      </div>
     </form>
   </dialog>
 </body>

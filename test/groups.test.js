@@ -1,22 +1,21 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createApp } from "../src/app.js";
+import { startApp } from "./helpers.js";
 import { openDb } from "../src/db.js";
 
 async function setup() {
   const db = openDb();
+  const app = await startApp({ db, lookup: async () => { throw new Error("no lookups"); } });
+  const person = await app.person("reza");
   const ids = {};
   for (const word of ["run", "walk", "jump", "swim"]) {
-    ids[word] = db.addWord({ word, phonetic: "", senses: [] }).id;
+    ids[word] = db.forUser(db.userByName("reza").id).addWord({ word, phonetic: "", senses: [] }).id;
   }
-  const server = createApp({ db, lookup: async () => { throw new Error("no lookups"); } }).listen(0);
-  await new Promise((r) => server.once("listening", r));
-  const base = `http://localhost:${server.address().port}/api`;
   const call = async (path, method = "GET", body) => {
-    const res = await fetch(base + path, { method, headers: { "content-type": "application/json" }, body: body && JSON.stringify(body) });
-    return { status: res.status, body: res.status === 204 ? null : await res.json() };
+    const { status, body: json } = await person.raw(path, { method, body });
+    return { status, body: json };
   };
-  return { ids, call, close: () => server.close() };
+  return { ids, call, close: app.close };
 }
 
 const groupOf = (tree, wordId) => tree.words.find((w) => w.id === wordId).groupId;

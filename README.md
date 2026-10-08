@@ -14,6 +14,7 @@ Your own English to Persian dictionary. It starts empty and you fill it.
 - **Other forms come along.** Adding a word also adds its other forms and groups them: "quick" brings "quickly", "quickness" and "quicken" into a group called *quick*, and adding "quickly" brings the others the same way. They come from the offline data's word families (suffix forms only: *un-* words have their own meaning, and *quicker* or *ran* are forms the lookup already handles). Only common words are added (rare ones like "quickener" are left out), at most 8, nearest first. A form you delete isn't added back by itself; the status line says when one was skipped and offers to add it anyway. To see a word's family and what would happen to each word, run `npm run check:family -- quick`.
 - **Group your words** by dragging one onto another: a new group holds both, and you name it right away. Drop words or groups onto a group to move them in; groups can sit inside groups. Use the *Move to the top level* zone that appears over the search box, or a row's top or bottom edge, to move something out. On a phone, hold a word for a moment, then drag. Each group's ⋯ menu renames or ungroups it, and a word's page has a group picker too.
 - **Search** your words in English or Persian from the same box.
+- **Accounts.** Everyone signs in with their own username and password and gets their own dictionary. You decide who can join with an invite code.
 - **Works on the web and Android.** It's a Progressive Web App: open it in Chrome on your phone and choose *Install app*. It also opens offline, showing your last saved words.
 
 ## How it works
@@ -22,12 +23,14 @@ Your own English to Persian dictionary. It starts empty and you fill it.
 public/                  the app: plain HTML, CSS and JavaScript, no build step
 public/drag.js           drag and drop for mouse, touch and pen
 src/app.js               the API (Express)
-src/db.js                storage: one SQLite file
+src/auth.js              password hashing, session tokens, attempt limits
+src/db.js                storage: one SQLite file, every person's words kept apart
 src/lookup.js            word lookup with Claude (when an API key is set)
 src/freeLookup.js        free word lookup: online English dictionaries + offline Persian
 src/sources.js           the online dictionaries: Merriam-Webster, Free Dictionary, Wiktionary
 src/lexicon.js           the offline Persian data (kaikki.org / Wiktionary)
 scripts/build-lexicon.js builds the offline data file
+scripts/users.js         manages accounts from the command line
 scripts/check-sources.js checks each online dictionary with a real request
 lexicon/en-fa.jsonl.gz   the offline data file, once you've built it
 lexicon/common-words.txt.gz  common English words, used when building the word families
@@ -92,9 +95,27 @@ cp .env.example .env    # optional: add a Claude API key; leave it empty for the
 npm run dev
 ```
 
-Open http://localhost:3000.
+Open http://localhost:3000 and create your account. The first account keeps the words saved before accounts existed.
 
 Run the tests with `npm test`.
+
+## Accounts and security
+
+Each person has their own words, sentences and groups; the offline dictionary data is shared.
+
+- **Who can join.** The first account can be created freely. After that, sign-up needs the invite code in `SIGNUP_CODE`, which you give to the people you want; without one, sign-up is closed. When `SIGNUP_CODE` is set, the first account needs it too, so set it before the app is reachable from the internet.
+- **Passwords** are at least 8 characters and are stored only as salted scrypt hashes; nobody, including you, can read them from the database. A wrong username and a wrong password look the same, and repeated failures are slowed down (10 per username, 20 per address, per 15 minutes).
+- **Sessions** use a random token in an HttpOnly, SameSite=Strict cookie (also Secure over https), valid for 30 days of use. The database keeps only a hash of each token. Signing out ends the session and removes this device's offline copy of the words; changing the password signs out every other device.
+- **Other protections:** changes are accepted only from the app's own pages, pages are sent with a strict Content Security Policy and other security headers, errors never show internals, and each account can look up at most 150 words an hour, so nobody can run up your Claude bill.
+
+Manage accounts from the command line on the server, for example when someone forgets their password:
+
+```bash
+npm run users                       # list accounts
+npm run users -- add sara           # create an account (asks for the password)
+npm run users -- password sara      # set a new password and sign them out everywhere
+npm run users -- delete sara        # delete an account and all its words
+```
 
 ### Use it on your phone while it runs on your PC
 
@@ -113,7 +134,7 @@ The address can change when the PC reconnects to Wi-Fi. If it does, update the f
 **Or give it a real https address** with a free Cloudflare quick tunnel (no account needed). This also works when the phone isn't on your Wi-Fi:
 
 1. Install `cloudflared` on the PC (Windows: `winget install --id Cloudflare.cloudflared`).
-2. Set `APP_PASSWORD` in `.env` and start the app. The tunnel makes it reachable from the internet, so the password keeps others out.
+2. Set `SIGNUP_CODE` (so strangers can't create accounts) and `TRUST_PROXY=loopback` in `.env`, and start the app.
 3. In a second terminal, run `cloudflared tunnel --url http://localhost:3000`.
 4. Open the `https://….trycloudflare.com` address it prints on your phone. The microphone and *Install app* both work.
 
@@ -126,7 +147,8 @@ The app is a single Node server, and your dictionary lives in one file (`data/di
 1. Set the environment variables:
    - `ANTHROPIC_API_KEY`: optional; leave it unset for the free lookup
    - `MERRIAM_WEBSTER_KEY`: optional; your Merriam-Webster Learner's key
-   - `APP_PASSWORD`: set one, so strangers can't use your dictionary or your API key
+   - `SIGNUP_CODE`: the invite code for new accounts; set it before the first visit (see [Accounts and security](#accounts-and-security))
+   - `TRUST_PROXY`: `1` when the host puts an https proxy in front of the app (most do), so sign-in cookies are marked Secure
    - `DATA_DIR`: a folder on the persistent disk (the Docker image uses `/data`)
 2. Deploy with the included `Dockerfile`, or run `npm ci --omit=dev && npm start`.
 3. Serve it over HTTPS. Phones only allow the microphone and app install on HTTPS sites; most hosts do this for you.

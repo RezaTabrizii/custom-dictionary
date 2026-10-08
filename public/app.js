@@ -13,9 +13,19 @@ const els = {
   count: $("#count"),
   detail: $("#detail"),
   detailEmpty: $("#detail").innerHTML,
+  auth: $("#auth"),
+  authForm: $("#auth-form"),
+  authTitle: $("#auth-title"),
+  authLead: $("#auth-lead"),
+  authError: $("#auth-error"),
+  authSubmit: $("#auth-submit"),
+  authSwitch: $("#auth-switch"),
+  authToggle: $("#auth-toggle"),
+  authSwitchText: $("#auth-switch-text"),
+  accountBtn: $("#account-btn"),
+  accountMenu: $("#account-menu"),
   pwDialog: $("#password-dialog"),
   pwForm: $("#password-form"),
-  pwInput: $("#password-input"),
   dropTop: $("#drop-top"),
   menu: $("#group-menu"),
 };
@@ -40,39 +50,33 @@ let renaming = null; // { id, isNew } of the group whose name is being typed
 const storage = {
   get: (k) => { try { return localStorage.getItem(k) ?? ""; } catch { return ""; } },
   set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+  remove: (k) => { try { localStorage.removeItem(k); } catch {} },
 };
+storage.remove("password"); // the shared password of earlier versions
 
 // Groups the user has closed, remembered on this device.
 const collapsed = new Set(JSON.parse(storage.get("collapsed") || "[]"));
 const saveCollapsed = () => storage.set("collapsed", JSON.stringify([...collapsed]));
 
+// Calls the API with the session cookie. A request that finds the session
+// gone shows the sign-in screen.
 async function api(path, { method = "GET", body } = {}) {
   const res = await fetch(`api${path}`, {
     method,
-    headers: { "content-type": "application/json", "x-app-password": storage.get("password") },
+    headers: { "content-type": "application/json" },
     body: body && JSON.stringify(body),
+    credentials: "same-origin",
   }).catch(() => {
     throw new Error("You're offline. Connect to the internet and try again.");
   });
-  if (res.status === 401) {
-    await askPassword();
-    return api(path, { method, body });
-  }
   if (res.status === 204) return null;
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && !path.startsWith("/auth/")) {
+    showAuth("Your session has ended. Sign in again.");
+    throw new Error("Sign in to continue.");
+  }
   if (!res.ok) throw new Error(data.error ?? "Something went wrong. Try again.");
   return data;
-}
-
-function askPassword() {
-  return new Promise((resolve) => {
-    els.pwInput.value = "";
-    els.pwDialog.showModal();
-    els.pwForm.addEventListener("submit", () => {
-      storage.set("password", els.pwInput.value);
-      resolve();
-    }, { once: true });
-  });
 }
 
 /* ---------- Rendering ---------- */
@@ -845,7 +849,7 @@ if (Recognition) {
   });
 }
 
-/* ---------- Start ---------- */
+/* ---------- Loading ---------- */
 
 async function load() {
   try {
@@ -856,7 +860,183 @@ async function load() {
   render();
 }
 
-load();
+/* ---------- Accounts ---------- */
+
+let signupMode = "closed"; // "open" (first account), "code" (invite code) or "closed"
+let authMode = "login";
+
+// Removes saved copies of anyone's words from this device's offline cache.
+async function forgetCachedData() {
+  if (!("caches" in window)) return;
+  for (const name of await caches.keys()) {
+    const cache = await caches.open(name);
+    for (const request of await cache.keys()) {
+      if (new URL(request.url).pathname.includes("/api/")) await cache.delete(request);
+    }
+  }
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const signup = mode === "signup";
+  const first = signup && signupMode === "open";
+  els.authTitle.textContent = first ? "Create your account" : signup ? "Create an account" : "Sign in";
+  els.authLead.textContent = first
+    ? "You're the first one here, so your account keeps the words already saved."
+    : "Your own English to Persian dictionary.";
+  els.authSubmit.textContent = signup ? "Create account" : "Sign in";
+  $("#auth-password").autocomplete = signup ? "new-password" : "current-password";
+  $("#auth-password-hint").hidden = !signup;
+  $("#auth-code-row").hidden = !(signup && signupMode === "code");
+  els.authSwitch.hidden = signupMode === "closed" && !signup;
+  els.authSwitchText.textContent = signup ? "Have an account?" : "New here?";
+  els.authToggle.textContent = signup ? "Sign in" : "Create an account";
+  els.authError.textContent = "";
+}
+
+function showAuth(message = "") {
+  words = [];
+  groups = [];
+  closeAccountMenu();
+  if (els.pwDialog.open) els.pwDialog.close();
+  document.querySelector(".app").hidden = true;
+  els.auth.hidden = false;
+  setAuthMode(authMode);
+  els.authError.textContent = message;
+  $("#auth-username").focus();
+}
+
+function enter(user) {
+  els.auth.hidden = true;
+  els.authForm.reset();
+  document.querySelector(".app").hidden = false;
+  $("#account-name").textContent = user.username;
+  els.accountBtn.setAttribute("aria-label", `Account: ${user.username}`);
+  setStatus();
+  load();
+}
+
+els.authToggle.addEventListener("click", () => {
+  setAuthMode(authMode === "login" ? "signup" : "login");
+  $("#auth-username").focus();
+});
+
+$("#auth-reveal").addEventListener("click", (e) => {
+  const input = $("#auth-password");
+  const show = input.type === "password";
+  input.type = show ? "text" : "password";
+  e.currentTarget.setAttribute("aria-pressed", String(show));
+  e.currentTarget.setAttribute("aria-label", show ? "Hide password" : "Show password");
+  e.currentTarget.querySelector("use").setAttribute("href", `icons.svg#i-${show ? "eye-slash" : "eye"}`);
+});
+
+els.authForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const f = els.authForm.elements;
+  const body = { username: f.username.value.trim(), password: f.password.value };
+  if (authMode === "signup") {
+    if (body.password.length < 8) {
+      els.authError.textContent = "Use a password of at least 8 characters.";
+      return f.password.focus();
+    }
+    if (signupMode === "code") body.code = f.code.value.trim();
+  }
+  els.authSubmit.disabled = true;
+  els.authError.textContent = "";
+  try {
+    const { user } = await api(`/auth/${authMode === "signup" ? "signup" : "login"}`, { method: "POST", body });
+    await forgetCachedData();
+    f.password.type = "password";
+    enter(user);
+  } catch (err) {
+    els.authError.textContent = err.message;
+    f.password.select();
+  } finally {
+    els.authSubmit.disabled = false;
+  }
+});
+
+/* Account menu */
+
+function closeAccountMenu() {
+  els.accountMenu.hidden = true;
+  els.accountBtn.setAttribute("aria-expanded", "false");
+}
+
+els.accountBtn.addEventListener("click", () => {
+  if (!els.accountMenu.hidden) return closeAccountMenu();
+  const r = els.accountBtn.getBoundingClientRect();
+  els.accountMenu.hidden = false;
+  els.accountBtn.setAttribute("aria-expanded", "true");
+  els.accountMenu.style.top = `${r.bottom + 4}px`;
+  els.accountMenu.style.left = `${Math.max(8, r.right - els.accountMenu.offsetWidth)}px`;
+  els.accountMenu.querySelector("button").focus();
+});
+
+document.addEventListener("pointerdown", (e) => {
+  if (!els.accountMenu.hidden && !els.accountMenu.contains(e.target) && !els.accountBtn.contains(e.target)) closeAccountMenu();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !els.accountMenu.hidden) {
+    closeAccountMenu();
+    els.accountBtn.focus();
+  }
+});
+
+els.accountMenu.addEventListener("click", async (e) => {
+  const choice = e.target.closest("[data-account]")?.dataset.account;
+  if (!choice) return;
+  closeAccountMenu();
+  if (choice === "password") {
+    els.pwForm.reset();
+    els.pwForm.querySelector(".form-error").textContent = "";
+    els.pwDialog.showModal();
+  }
+  if (choice === "sign-out") {
+    await api("/auth/logout", { method: "POST" }).catch(() => {});
+    await forgetCachedData();
+    select(null);
+    authMode = "login";
+    showAuth();
+  }
+});
+
+els.pwForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const f = els.pwForm.elements;
+  const error = els.pwForm.querySelector(".form-error");
+  if (f.password.value.length < 8) {
+    error.textContent = "Use a new password of at least 8 characters.";
+    return f.password.focus();
+  }
+  try {
+    await api("/auth/password", { method: "POST", body: { current: f.current.value, password: f.password.value } });
+    els.pwDialog.close();
+    setStatus("Your password was changed. Other devices were signed out.");
+  } catch (err) {
+    error.textContent = err.message;
+  }
+});
+els.pwForm.querySelector("[data-close]").addEventListener("click", () => els.pwDialog.close());
+
+/* ---------- Start ---------- */
+
+async function start() {
+  try {
+    const status = await api("/auth/status");
+    signupMode = status.signup;
+    if (status.user) return enter(status.user);
+    authMode = signupMode === "open" ? "signup" : "login";
+    showAuth();
+  } catch (err) {
+    // Offline: show the words saved on this device, if any.
+    document.querySelector(".app").hidden = false;
+    setStatus(err.message, true);
+    load();
+  }
+}
+
+start();
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js").catch(() => {});

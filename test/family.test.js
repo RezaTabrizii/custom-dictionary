@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createApp } from "../src/app.js";
+import { startApp } from "./helpers.js";
 import { openDb } from "../src/db.js";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -113,14 +113,9 @@ async function setup() {
     if (word === "quickness") throw new Error("not found"); // one relative can't be looked up
     return { word, phonetic: "", senses: [{ partOfSpeech: "adverb", persian: [], definition: `${word}.`, example: "" }] };
   };
-  const server = createApp({ db, lookup }).listen(0);
-  await new Promise((r) => server.once("listening", r));
-  const base = `http://localhost:${server.address().port}/api`;
-  const call = async (path, method = "GET", body) => {
-    const res = await fetch(base + path, { method, headers: { "content-type": "application/json" }, body: body && JSON.stringify(body) });
-    return res.status === 204 ? null : res.json();
-  };
-  return { db, call, lookups, close: () => server.close() };
+  const app = await startApp({ db, lookup });
+  const call = await app.person("reza");
+  return { db, call, lookups, close: app.close };
 }
 
 test("adding a word adds its other forms and groups them", async (t) => {
@@ -173,7 +168,8 @@ test("a new word is grouped with relatives already saved, even when none can be 
 });
 
 test("family words join a group the family already has, and others stay where the user put them", () => {
-  const db = openDb();
+  const all = openDb();
+  const db = all.forUser(all.createUser("reza", "not-a-real-hash"));
   const [quick, quickly, quickness, other] = ["quick", "quickly", "quickness", "slow"]
     .map((word) => db.addWord({ word, phonetic: "", senses: [] }).id);
   const speed = db.createGroup("Speed", null, [{ kind: "word", id: quickly }, { kind: "word", id: other }]);

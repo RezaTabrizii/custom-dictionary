@@ -1,6 +1,6 @@
 // Network first, so the dictionary is always current online; the last copy is
 // served from the cache when offline.
-const CACHE = "vazhe-v2";
+const CACHE = "vazhe-v3";
 const SHELL = ["./", "index.html", "styles.css", "app.js", "drag.js", "icons.svg", "manifest.webmanifest",
   "fonts/geist.woff2", "fonts/geist-italic.woff2", "fonts/vazirmatn.woff2"];
 
@@ -16,7 +16,10 @@ self.addEventListener("activate", (e) => {
 
 self.addEventListener("fetch", (e) => {
   const { request } = e;
-  if (request.method !== "GET" || new URL(request.url).origin !== location.origin) return;
+  const url = new URL(request.url);
+  if (request.method !== "GET" || url.origin !== location.origin) return;
+  // Who is signed in is always asked from the server, never from the cache.
+  if (url.pathname.includes("/api/auth/")) return;
   e.respondWith(
     fetch(request)
       .then((res) => {

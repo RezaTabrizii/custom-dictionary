@@ -1,6 +1,6 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { createApp } from "../src/app.js";
+import { startApp } from "./helpers.js";
 import { openDb } from "../src/db.js";
 import { LookupError } from "../src/lookup.js";
 
@@ -14,7 +14,7 @@ const ENTRY = {
   ],
 };
 
-let server, base, lookups;
+let app, cookie, lookups;
 
 before(async () => {
   lookups = [];
@@ -24,24 +24,22 @@ before(async () => {
     if (word === "run") return ENTRY;
     throw new LookupError(`"${word}" doesn't look like an English word.`);
   };
-  const app = createApp({ db: openDb(), lookup, password: "secret" });
-  server = app.listen(0);
-  await new Promise((r) => server.once("listening", r));
-  base = `http://localhost:${server.address().port}/api`;
+  app = await startApp({ db: openDb(), lookup });
+  const res = await app.request("/auth/signup", { method: "POST", body: { username: "reza", password: "correct horse battery" } });
+  cookie = res.headers.get("set-cookie").split(";")[0];
 });
 
-after(() => server.close());
+after(() => app.close());
 
-const call = (path, { method = "GET", body, password = "secret" } = {}) =>
-  fetch(base + path, {
-    method,
-    headers: { "content-type": "application/json", "x-app-password": password },
-    body: body && JSON.stringify(body),
-  });
+// Like fetch, as the signed-in person.
+const call = async (path, { method = "GET", body } = {}) => {
+  const res = await app.request(path, { method, body, cookie });
+  return { status: res.status, json: async () => res.body };
+};
 
-test("rejects a wrong password", async () => {
-  const res = await call("/words", { password: "nope" });
-  assert.equal(res.status, 401);
+test("needs a signed-in person", async () => {
+  assert.equal((await app.request("/words")).status, 401);
+  assert.equal((await app.request("/words", { cookie: "vazhe_session=made-up" })).status, 401);
 });
 
 test("adds, lists, annotates and deletes a word", async () => {

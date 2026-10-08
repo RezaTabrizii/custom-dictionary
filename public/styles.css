@@ -152,6 +152,7 @@ button { cursor: pointer; }
     padding: 0;
     min-height: 0;
   }
+  .list-pane .word-list:empty { flex: none; }
   .list-pane .word-list { overflow-y: auto; min-height: 0; flex: 1; scrollbar-gutter: stable; margin-right: -16px; padding-right: 4px; }
   .detail-pane, .app.has-selection .detail-pane {
     position: static;
@@ -832,7 +833,63 @@ textarea.input { resize: vertical; line-height: 1.5; }
   border-radius: var(--radius-control);
   background: var(--bg);
 }
-.password .btn { width: 100%; }
+.password .form-error { margin: -6px 0 14px; color: var(--danger); }
+.dialog-actions { display: flex; gap: 8px; }
+.dialog-actions .btn { flex: 1; }
+
+/* ---------- Sign in ---------- */
+
+.app[hidden], .auth[hidden], .auth-switch[hidden] { display: none; }
+
+.auth {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: max(24px, env(safe-area-inset-top)) 16px 32px;
+}
+.auth-card {
+  width: min(400px, 100%);
+  padding: 32px 28px 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.auth-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+.auth h1 { margin: 0 0 4px; font-size: 26px; font-weight: 650; letter-spacing: -0.015em; }
+.auth-lead { margin: 0 0 24px; color: var(--muted); }
+#auth-form { display: grid; }
+#auth-form label { margin: 0 0 6px; font-size: 14px; font-weight: 500; }
+#auth-form .input, #auth-form .field { margin-bottom: 16px; }
+#auth-form .field input { padding-left: 14px; font-size: 16px; }
+.auth-hint { margin: -10px 0 16px; color: var(--muted); font-size: 13px; }
+#auth-form .form-error { margin: -4px 0 14px; }
+.auth-switch {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 20px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 14px;
+}
+@media (max-width: 480px) {
+  .auth { place-items: start center; }
+  .auth-card { padding: 24px 20px 20px; box-shadow: none; }
+}
+
+/* ---------- Account ---------- */
+
+.account-btn { margin: 0 -10px 0 2px; }
+.menu-note {
+  margin: 0 0 4px;
+  padding: 8px 10px 10px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+}
+.menu-note strong { color: var(--ink); font-weight: 600; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0s !important; }

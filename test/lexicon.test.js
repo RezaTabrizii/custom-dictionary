@@ -46,7 +46,8 @@ test("fills the database once and finds words offline, including inflected forms
   writeFileSync(file, gzipSync((await build()).map((r) => JSON.stringify(r)).join("\n")));
 
   const db = openDb();
-  db.addWord({ word: "mine", phonetic: "", senses: [] });
+  db.createUser("reza", "not-a-real-hash");
+  db.forUser(1).addWord({ word: "mine", phonetic: "", senses: [] });
   assert.equal(await loadLexicon(db, file), 2);
   const version = db.lexiconVersion();
   assert.equal(await loadLexicon(db, file), 2); // a restart doesn't re-import
@@ -62,7 +63,7 @@ test("fills the database once and finds words offline, including inflected forms
   writeFileSync(file, gzipSync(JSON.stringify((await build())[1])));
   assert.equal(await loadLexicon(db, file), 1);
   assert.equal(db.findInLexicon("run"), undefined);
-  assert.equal(db.listWords().length, 1);
+  assert.equal(db.forUser(1).listWords().length, 1);
 });
 
 test("an absent lexicon file leaves the table empty", async () => {

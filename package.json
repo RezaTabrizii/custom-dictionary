@@ -14,7 +14,8 @@
     "test": "node --test",
     "build:lexicon": "node scripts/build-lexicon.js",
     "check:sources": "node --env-file-if-exists=.env scripts/check-sources.js",
-    "check:family": "node --env-file-if-exists=.env scripts/check-family.js"
+    "check:family": "node --env-file-if-exists=.env scripts/check-family.js",
+    "users": "node --env-file-if-exists=.env scripts/users.js"
   },
   "license": "MIT",
   "dependencies": {
