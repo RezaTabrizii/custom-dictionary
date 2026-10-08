@@ -30,6 +30,8 @@
   --accent-ink: #ffffff;
   --accent-soft: rgb(36 72 168 / 0.09);
   --danger: #b42318;
+  --scroll-thumb: #c3cad5;
+  --scroll-thumb-hover: #97a1b1;
   --shadow: 0 1px 2px rgb(19 26 38 / 0.06), 0 8px 24px rgb(19 26 38 / 0.06);
   --radius-control: 12px;
   --radius-panel: 16px;
@@ -49,6 +51,8 @@
     --accent-ink: #0c1119;
     --accent-soft: rgb(133 161 255 / 0.12);
     --danger: #ff8a80;
+    --scroll-thumb: #2c3a52;
+    --scroll-thumb-hover: #46587a;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.25);
   }
 }
@@ -73,6 +77,25 @@ button { cursor: pointer; }
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* Thin, rounded scrollbars in the same cool greys, with no track or arrows. */
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: transparent; margin: 12px; } /* clear of rounded corners */
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: var(--scroll-thumb) padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover) padding-box; }
+::-webkit-scrollbar-button, ::-webkit-scrollbar-corner { display: none; }
+
+/* Firefox has no ::-webkit-scrollbar; it gets the standard properties. */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scroll-thumb) transparent;
+  }
 }
 
 .sr-only {
@@ -129,7 +152,7 @@ button { cursor: pointer; }
     padding: 0;
     min-height: 0;
   }
-  .word-list { overflow-y: auto; min-height: 0; flex: 1; }
+  .list-pane .word-list { overflow-y: auto; min-height: 0; flex: 1; scrollbar-gutter: stable; margin-right: -16px; padding-right: 4px; }
   .detail-pane, .app.has-selection .detail-pane {
     position: static;
     transform: none;
