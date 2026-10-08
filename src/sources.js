@@ -100,6 +100,10 @@ export function createMerriamWebster({ key, fetchImpl = fetch }) {
       // An inflected form ("ran") is listed in the base entry's stems.
       const base = data.find((e) => e.meta?.stems?.some((s) => s.toLowerCase() === wanted));
       if (!base) return null;
+      // A run-on word ("quickly" under "quick") is a word of its own, which
+      // this entry doesn't define; the next source will.
+      const runOn = (e) => e.uros?.some((u) => u.ure?.replace(/\*/g, "").toLowerCase() === wanted);
+      if (data.some(runOn)) return null;
       entries = data.filter((e) => headword(e) === headword(base));
     }
 

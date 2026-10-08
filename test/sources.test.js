@@ -38,6 +38,16 @@ test("Merriam-Webster: an inflected form finds its base entry", async () => {
   assert.equal(entry.senses.length, 5);
 });
 
+test("Merriam-Webster: a run-on word (\"quickly\" under \"quick\") is left to the next source", async () => {
+  const quick = [{ meta: { id: "quick", stems: ["quick", "quicker", "quickly", "quickness"] }, fl: "adjective",
+    uros: [{ ure: "quick*ly", fl: "adverb" }, { ure: "quick*ness", fl: "noun" }],
+    def: [{ sseq: [[["sense", { dt: [["text", "{bc}fast"]] }]]] }] }];
+  const { fetchImpl } = fakeFetch(200, JSON.stringify(quick));
+  const mw = createMerriamWebster({ key: "k", fetchImpl });
+  assert.equal(await mw("quickly"), null);
+  assert.equal((await mw("quicker")).word, "quick"); // an inflection still finds its base
+});
+
 test("Merriam-Webster: an unknown word (spelling suggestions) is not found", async () => {
   const { fetchImpl } = fakeFetch(200, '["rum","ruin","rune"]');
   assert.equal(await createMerriamWebster({ key: "k", fetchImpl })("runx"), null);

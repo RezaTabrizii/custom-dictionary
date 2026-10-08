@@ -11,6 +11,7 @@ Your own English to Persian dictionary. It starts empty and you fill it.
 - **Hear each word** pronounced. The speaker button plays a real recording from Wiktionary when one exists; otherwise it uses your phone's or browser's built-in voice.
 - **Add your own sentences** under any word, typed or spoken.
 - **Fill in or correct meanings.** A meaning without Persian has an *Add Persian meaning* button, and the pencil next to any meaning lets you change its Persian (typed or spoken), word type, definition and example, or delete it. *Add a meaning* adds one of your own.
+- **Other forms come along.** Adding a word also adds its other forms and groups them: "quick" brings "quickly", "quickness" and "quicken" into a group called *quick*, and adding "quickly" brings the others the same way. They come from the offline data's word families (suffix forms only: *un-* words have their own meaning, and *quicker* or *ran* are forms the lookup already handles). A form you delete isn't added back later.
 - **Group your words** by dragging one onto another: a new group holds both, and you name it right away. Drop words or groups onto a group to move them in; groups can sit inside groups. Use the *Move to the top level* zone that appears over the search box, or a row's top or bottom edge, to move something out. On a phone, hold a word for a moment, then drag. Each group's ⋯ menu renames or ungroups it, and a word's page has a group picker too.
 - **Search** your words in English or Persian from the same box.
 - **Works on the web and Android.** It's a Progressive Web App: open it in Chrome on your phone and choose *Install app*. It also opens offline, showing your last saved words.
@@ -68,13 +69,15 @@ The offline data comes from [kaikki.org](https://kaikki.org), which publishes En
 npm run build:lexicon
 ```
 
-This downloads the full English Wiktionary file (several GB, so make sure you have the disk space) to `lexicon/kaikki-English.jsonl`. If the connection drops, it resumes where it stopped, and if you run the command again later it reuses a finished download. It then keeps only words with Persian translations and writes the small file `lexicon/en-fa.jsonl.gz`. Afterwards you can delete `lexicon/kaikki-English.jsonl`. Commit the small file so every deployment has it:
+This downloads the full English Wiktionary file (several GB, so make sure you have the disk space) to `lexicon/kaikki-English.jsonl`. If the connection drops, it resumes where it stopped, and if you run the command again later it reuses a finished download. It then keeps only words with Persian translations, plus the word families (quick, quickly, quickness…) of those words, and writes the small file `lexicon/en-fa.jsonl.gz`. Afterwards you can delete `lexicon/kaikki-English.jsonl`. Commit the small file so every deployment has it:
 
 ```bash
 git add lexicon/en-fa.jsonl.gz && git commit -m "Add offline dictionary data" && git push
 ```
 
 If the download is slow or fails, download `kaikki.org-dictionary-English.jsonl` from kaikki.org yourself (in a browser, for example) and pass the file: `npm run build:lexicon -- path/to/kaikki.org-dictionary-English.jsonl`.
+
+A file built before word families were added has none, so other forms aren't added until you rebuild it.
 
 On its first start, the server fills its database from that file. Later starts skip this step unless the file has changed, for example after you rebuild it with newer Wiktionary data. Then it reloads the offline dictionary and keeps your saved words.
 

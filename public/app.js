@@ -31,6 +31,7 @@ const POS_NAMES = Object.keys(POS_SHORT);
 let words = [];
 let groups = []; // { id, name, parentId }; a word's groupId says which group it's in
 let pending = null; // the word currently being looked up
+let relatives = []; // other forms of a new word being added, like "quickly" for "quick"
 let editing = null; // index of the meaning being edited, "new" for a new one, or null
 let renaming = null; // { id, isNew } of the group whose name is being typed
 
@@ -157,13 +158,13 @@ function renderList() {
     ? `<li class="list-hint">${touchFirst ? "Hold a word and drag it onto another" : "Drag a word onto another"} to put them in a group.</li>`
     : "";
   els.list.innerHTML =
-    (pending ? `<li><div class="word-row pending">
-        <span class="w">Looking up "${esc(pending)}"…</span><span class="skeleton"></span>
-      </div></li>` : "") + tree.html + hint;
+    [pending, ...relatives].filter(Boolean).map((w) => `<li><div class="word-row pending">
+        <span class="w">${w === pending ? "Looking up" : "Adding"} "${esc(w)}"…</span><span class="skeleton"></span>
+      </div></li>`).join("") + tree.html + hint;
 
   els.count.textContent = words.length === 1 ? "1 word" : `${words.length} words`;
 
-  if (pending || tree.shown) {
+  if (pending || relatives.length || tree.shown) {
     els.empty.hidden = true;
   } else if (!words.length) {
     els.empty.hidden = false;
@@ -322,17 +323,45 @@ async function addWord(raw) {
   setStatus();
   renderList();
   try {
-    const entry = await api("/words", { method: "POST", body: { word } });
+    const { related = [], ...entry } = await api("/words", { method: "POST", body: { word } });
     if (!words.some((w) => w.id === entry.id)) words.unshift(entry);
     if (entry.existing) setStatus(`"${entry.word}" is already in your dictionary.`);
     els.input.value = "";
     select(entry.id);
+    if (related.length) addRelatives(entry, related);
   } catch (err) {
     setStatus(err.message, true);
   } finally {
     pending = null;
     els.addBtn.disabled = false;
     render();
+  }
+}
+
+// Adds the other forms of a new word in the background and groups the family.
+async function addRelatives(entry, names) {
+  relatives = names;
+  setStatus(`Adding other forms of "${entry.word}": ${names.join(", ")}…`);
+  try {
+    const result = await api(`/words/${entry.id}/family`, { method: "POST" });
+    words.unshift(...result.added.toReversed());
+    applyTree(result);
+    const added = result.added.map((w) => `"${w.word}"`);
+    setStatus(added.length
+      ? `Also added ${added.length > 1 ? `${added.slice(0, -1).join(", ")} and ${added.at(-1)}` : added[0]}, grouped with "${entry.word}".`
+      : "");
+    relatives = [];
+    render();
+    if (result.groupId) {
+      collapsed.delete(result.groupId);
+      saveCollapsed();
+      renderList();
+      showLanded({ kind: "group", id: result.groupId });
+    }
+  } catch (err) {
+    relatives = [];
+    renderList();
+    setStatus(`Couldn't add the other forms of "${entry.word}". ${err.message}`, true);
   }
 }
 

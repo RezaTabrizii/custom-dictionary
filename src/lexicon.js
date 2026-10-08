@@ -7,6 +7,8 @@ import { createGunzip } from "node:zlib";
 // Converts kaikki.org (Wiktionary) English entries into the compact offline
 // lexicon, which supplies Persian meanings when there is no Claude API key. One lexicon line looks like:
 // {"word":"run","phonetic":"/rʌn/","audio":"https://…/En-us-run.mp3","forms":["ran","runs"],"senses":[{partOfSpeech, persian, definition, example}]}
+// After the words come the word families, one base word per line:
+// {"base":"quick","derived":["quickly","quickness","quicken"]}
 
 export const LEXICON_FILE = new URL("../lexicon/en-fa.jsonl.gz", import.meta.url);
 
@@ -86,9 +88,85 @@ export function convertEntry(entry) {
 
 // Merges every part of speech of a word into one lexicon record. Lines that
 // aren't valid JSON are skipped and counted in stats.badLines.
+/* ---------- Word families ---------- */
+
+// Suffixes that make another form of the same word (quick -> quickly, quickness).
+// Prefixes are left out: they change the meaning (happy -> unhappy).
+const SUFFIXES = [
+  "ly", "ally", "ness", "ity", "ment", "ion", "tion", "ation", "er", "or", "ful", "less",
+  "able", "ible", "al", "ial", "ive", "ize", "ise", "en", "ous", "ic", "ical",
+  "ance", "ence", "ant", "ent", "ship", "hood", "ist", "ism", "y",
+];
+// Senses with these tags don't make a word common enough to add on its own.
+const UNCOMMON_TAGS = new Set([...SKIP_TAGS, "nonstandard", "nonce-word", "dialectal", "slang", "uncommon"]);
+const PLAIN_WORD = /^[a-z]+$/;
+
+// The spellings a word takes before a suffix: happy -> happi(ness), make -> mak(er),
+// run -> runn(er), gentle -> gentl(y).
+function stems(base) {
+  const out = [base];
+  if (base.endsWith("e")) out.push(base.slice(0, -1));
+  if (/[^aeiou]y$/.test(base)) out.push(`${base.slice(0, -1)}i`);
+  if (/[^aeiou][aeiou][bdgklmnprt]$/.test(base)) out.push(base + base.at(-1));
+  return out;
+}
+
+// Whether `word` is `base` plus one of the suffixes.
+export function derivesFrom(word, base) {
+  return word !== base && stems(base).some((stem) =>
+    word.startsWith(stem) && SUFFIXES.includes(word.slice(stem.length)));
+}
+
+// The base word an entry's etymology says it was made from, as in "quick + -ly".
+function etymologyBase(entry) {
+  for (const t of entry.etymology_templates ?? []) {
+    if (!["suffix", "suf", "surf", "af", "affix"].includes(t.name) || t.args?.["1"] !== "en") continue;
+    const parts = Object.keys(t.args).filter((k) => /^\d+$/.test(k) && k !== "1")
+      .sort((a, b) => a - b).map((k) => t.args[k]);
+    if (parts.length === 2 && PLAIN_WORD.test(parts[0]) && SUFFIXES.includes(parts[1].replace(/^-/, ""))) return parts[0];
+  }
+  return null;
+}
+
+// Collects suffix pairs (word made from base) from every English entry, so the
+// families include words without Persian, like "quickness".
+function familyCollector() {
+  const pairs = new Map(); // "word base" -> [word, base]
+  const common = new Set(); // words with at least one ordinary sense
+  return {
+    add(entry) {
+      if (entry.lang_code !== "en" || !PLAIN_WORD.test(entry.word ?? "")) return;
+      if (entry.senses?.some((s) => s.glosses?.length && !s.tags?.some((t) => UNCOMMON_TAGS.has(t)))) common.add(entry.word);
+      const base = etymologyBase(entry);
+      if (base) pairs.set(`${entry.word} ${base}`, [entry.word, base]);
+      for (const d of entry.derived ?? []) {
+        if (PLAIN_WORD.test(d.word ?? "")) pairs.set(`${d.word} ${entry.word}`, [d.word, entry.word]);
+      }
+    },
+    // Families that include at least one word of the lexicon, by base word.
+    *families(lexiconWords) {
+      const valid = [...pairs.values()].filter(([word, base]) =>
+        common.has(word) && common.has(base) && derivesFrom(word, base));
+      // Joins pairs into families, so quickly and quickness meet through quick.
+      const parent = new Map();
+      const find = (w) => {
+        while (parent.has(w) && parent.get(w) !== w) w = parent.get(w);
+        return w;
+      };
+      for (const [word, base] of valid) parent.set(find(word), find(base));
+      const inFamily = new Set(valid.flat());
+      const keep = new Set([...lexiconWords].filter((w) => inFamily.has(w)).map(find));
+      const byBase = Map.groupBy(valid.filter(([word]) => keep.has(find(word))), ([, base]) => base);
+      for (const [base, list] of byBase) yield { base, derived: list.map(([word]) => word) };
+    },
+  };
+}
+
 export async function* buildLexicon(lines, stats = {}) {
   const byWord = new Map();
+  const families = familyCollector();
   stats.badLines = 0;
+  stats.families = 0;
   for await (const line of lines) {
     if (!line.trim()) continue;
     let entry;
@@ -98,6 +176,7 @@ export async function* buildLexicon(lines, stats = {}) {
       stats.badLines++;
       continue;
     }
+    families.add(entry);
     const converted = convertEntry(entry);
     if (!converted) continue;
     const key = converted.word.toLowerCase();
@@ -115,6 +194,10 @@ export async function* buildLexicon(lines, stats = {}) {
     rec.senses = rec.senses.slice(0, MAX_SENSES);
     yield rec;
   }
+  for (const family of families.families(byWord.keys())) {
+    stats.families++;
+    yield family;
+  }
 }
 
 export function readLines(stream, gzipped) {
@@ -130,11 +213,13 @@ export async function loadLexicon(db, file = LEXICON_FILE) {
   if (db.lexiconVersion() === version) return db.lexiconSize();
 
   const records = [];
+  const families = [];
   for await (const line of readLines(createReadStream(file), true)) {
     if (!line.trim()) continue;
     const record = JSON.parse(line);
-    records.push({ ...record, senses: cleanSenses(record.senses) });
+    if (record.base) families.push(record);
+    else records.push({ ...record, senses: cleanSenses(record.senses) });
   }
-  db.importLexicon(records, version);
+  db.importLexicon(records, version, families);
   return records.length;
 }

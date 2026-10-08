@@ -45,12 +45,41 @@ export function createApp({ db, lookup, password = "" }) {
       const entry = await lookup(input);
       const existing = db.findWord(entry.word);
       if (existing) return res.json({ ...existing, existing: true });
-      res.status(201).json(db.addWord(entry));
+      const word = db.addWord(entry);
+      // Other forms of the word (quick -> quickly, quickness) the client then
+      // asks to add with POST /words/:id/family.
+      res.status(201).json({ ...word, related: missingRelatives(word.word) });
     } catch (err) {
       if (err instanceof LookupError) return res.status(422).json({ error: err.message });
       console.error("Lookup failed:", err);
       res.status(502).json({ error: "Couldn't reach the dictionary service. Try again." });
     }
+  });
+
+  // Relatives that aren't saved and weren't deleted by the user.
+  const missingRelatives = (word) =>
+    db.wordFamily(word).members.filter((m) => !db.findWord(m) && !db.isDismissed(m));
+
+  // Adds the missing other forms of a word and groups the family.
+  api.post("/words/:id/family", async (req, res) => {
+    const word = db.getWord(Number(req.params.id));
+    if (!word) return notFound(res);
+    const { name, members } = db.wordFamily(word.word);
+
+    const added = [];
+    for (const m of members.filter((x) => !db.findWord(x) && !db.isDismissed(x))) {
+      try {
+        const entry = await lookup(m);
+        // A lookup can answer with a word that's already saved (its base form).
+        if (!db.findWord(entry.word)) added.push(db.addWord(entry));
+      } catch (err) {
+        console.error(`Couldn't add "${m}": ${err.message}`);
+      }
+    }
+
+    const saved = [word.word, ...members].map((m) => db.findWord(m)).filter(Boolean);
+    const groupId = saved.length >= 2 ? db.groupFamily(saved.map((w) => w.id), name) : null;
+    res.json({ added: added.map((w) => db.getWord(w.id)), groupId, ...db.tree() });
   });
 
   api.delete("/words/:id", (req, res) => {

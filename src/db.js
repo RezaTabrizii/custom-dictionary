@@ -39,6 +39,17 @@ export function openDb(file = ":memory:") {
       form TEXT PRIMARY KEY COLLATE NOCASE,
       word TEXT NOT NULL
     );
+    -- Word families from the offline data: each word made from a base word by a suffix.
+    CREATE TABLE IF NOT EXISTS lexicon_family (
+      word TEXT NOT NULL COLLATE NOCASE,
+      base TEXT NOT NULL COLLATE NOCASE,
+      PRIMARY KEY (word, base)
+    );
+    CREATE INDEX IF NOT EXISTS lexicon_family_base ON lexicon_family (base);
+    -- Words the user deleted, so they aren't added back as part of a family.
+    CREATE TABLE IF NOT EXISTS dismissed (
+      word TEXT PRIMARY KEY COLLATE NOCASE
+    );
     CREATE TABLE IF NOT EXISTS meta (
       key   TEXT PRIMARY KEY,
       value TEXT NOT NULL
@@ -78,6 +89,13 @@ export function openDb(file = ":memory:") {
     removeEmptyGroups: db.prepare(`
       DELETE FROM groups WHERE id NOT IN (SELECT group_id FROM words WHERE group_id IS NOT NULL)
         AND id NOT IN (SELECT parent_id FROM groups WHERE parent_id IS NOT NULL)`),
+    groupWordIds: db.prepare("SELECT id FROM words WHERE group_id = ?"),
+    childGroupCount: db.prepare("SELECT count(*) AS n FROM groups WHERE parent_id = ?"),
+    familyInsert: db.prepare("INSERT OR IGNORE INTO lexicon_family (word, base) VALUES (?, ?)"),
+    familyOf: db.prepare("SELECT base AS w FROM lexicon_family WHERE word = ?1 UNION SELECT word FROM lexicon_family WHERE base = ?1"),
+    dismiss: db.prepare("INSERT OR IGNORE INTO dismissed (word) VALUES (?)"),
+    undismiss: db.prepare("DELETE FROM dismissed WHERE word = ?"),
+    isDismissed: db.prepare("SELECT 1 FROM dismissed WHERE word = ?"),
     lexiconSize: db.prepare("SELECT count(*) AS n FROM lexicon"),
     metaGet: db.prepare("SELECT value FROM meta WHERE key = ?"),
     metaSet: db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)"),
@@ -168,6 +186,7 @@ export function openDb(file = ":memory:") {
       return row ? shape(row, q.examplesOf.all(row.id)) : null;
     },
     addWord({ word, phonetic, audio = "", senses }) {
+      q.undismiss.run(word);
       const { lastInsertRowid } = q.insert.run(word, phonetic, audio, JSON.stringify(cleanSenses(senses)));
       return this.getWord(Number(lastInsertRowid));
     },
@@ -177,7 +196,64 @@ export function openDb(file = ":memory:") {
       return this.getWord(id);
     },
     deleteWord(id) {
-      return transaction(() => q.remove.run(id).changes > 0);
+      return transaction(() => {
+        const row = q.byId.get(id);
+        if (row) q.dismiss.run(row.word);
+        return q.remove.run(id).changes > 0;
+      });
+    },
+    isDismissed(word) {
+      return Boolean(q.isDismissed.get(word));
+    },
+
+    // The other words of a word's family, nearest first (quickly -> quick, then
+    // quickness), at most `max` of them, and the family's name: its shortest word.
+    wordFamily(word, max = 8) {
+      const start = word.toLowerCase();
+      const seen = new Set([start]);
+      let layer = [start];
+      const members = [];
+      while (layer.length) {
+        const next = [];
+        for (const w of layer) {
+          for (const { w: other } of q.familyOf.all(w)) {
+            const o = other.toLowerCase();
+            if (!seen.has(o)) {
+              seen.add(o);
+              next.push(o);
+            }
+          }
+        }
+        next.sort((a, b) => a.length - b.length || a.localeCompare(b));
+        members.push(...next);
+        layer = next;
+      }
+      const name = [...seen].sort((a, b) => a.length - b.length || a.localeCompare(b))[0];
+      return { name, members: members.slice(0, max) };
+    },
+
+    // Puts a family's saved words in one group and returns its id. A group that
+    // holds only family words is reused; otherwise a group named after the family
+    // is made where the first word is (wordIds[0]). Words the user put in other
+    // groups stay there.
+    groupFamily(wordIds, name) {
+      return transaction(() => {
+        const family = new Set(wordIds);
+        const rows = wordIds.map((id) => q.byId.get(id)).filter(Boolean);
+        const groupIds = [...new Set(rows.map((r) => r.group_id).filter((g) => g !== null))];
+        let target = groupIds.find((g) => !q.childGroupCount.get(g).n
+          && q.groupWordIds.all(g).every(({ id }) => family.has(id)));
+        // A new group goes where the first grouped word is, taking the words there too.
+        let home = null;
+        if (target === undefined) {
+          home = rows.find((r) => r.group_id !== null)?.group_id ?? null;
+          target = Number(q.insertGroup.run(name, home).lastInsertRowid);
+        }
+        for (const r of rows) {
+          if (r.group_id === null || (home !== null && r.group_id === home)) q.setWordGroup.run(target, r.id);
+        }
+        return target;
+      });
     },
 
     // The groups, and which group each word is in.
@@ -230,14 +306,17 @@ export function openDb(file = ":memory:") {
       return q.metaGet.get("lexicon")?.value ?? "";
     },
     // Replaces the offline dictionary; the user's own words are untouched.
-    importLexicon(records, version) {
+    importLexicon(records, version, families = []) {
       db.exec("BEGIN");
       try {
-        db.exec("DELETE FROM lexicon; DELETE FROM lexicon_forms;");
+        db.exec("DELETE FROM lexicon; DELETE FROM lexicon_forms; DELETE FROM lexicon_family;");
         q.metaSet.run("lexicon", version);
         for (const r of records) {
           q.lexiconInsert.run(r.word, r.phonetic, r.audio ?? "", JSON.stringify(r.senses));
           for (const form of r.forms) q.formInsert.run(form, r.word);
+        }
+        for (const f of families) {
+          for (const word of f.derived) q.familyInsert.run(word, f.base);
         }
         db.exec("COMMIT");
       } catch (err) {

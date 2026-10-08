@@ -35,7 +35,7 @@ async function* counted(lines) {
 let written = 0;
 async function* toJsonl(records) {
   for await (const r of records) {
-    written++;
+    if (r.word) written++;
     yield `${JSON.stringify(r)}\n`;
   }
 }
@@ -45,6 +45,6 @@ const stats = {};
 const lines = readLines(createReadStream(source), source.endsWith(".gz"));
 await pipeline(toJsonl(buildLexicon(counted(lines), stats)), createGzip({ level: 9 }), createWriteStream(out));
 
-console.log(`Wrote ${written.toLocaleString()} words with Persian meanings to ${out}`);
+console.log(`Wrote ${written.toLocaleString()} words with Persian meanings and ${stats.families.toLocaleString()} word families to ${out}`);
 if (stats.badLines) console.warn(`Skipped ${stats.badLines} unreadable line(s) in the source file.`);
 if (source.endsWith("kaikki-English.jsonl")) console.log(`You can delete ${source} to free disk space.`);
