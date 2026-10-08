@@ -11,6 +11,9 @@ import { createGunzip } from "node:zlib";
 // {"base":"quick","derived":["quickly","quickness","quicken"]}
 
 export const LEXICON_FILE = new URL("../lexicon/en-fa.jsonl.gz", import.meta.url);
+// English words that appear at least 50 times in the FrequencyWords subtitle
+// corpus, so the word families leave out rare words.
+export const COMMON_WORDS_FILE = new URL("../lexicon/common-words.txt.gz", import.meta.url);
 
 const POS = {
   noun: "noun", verb: "verb", adj: "adjective", adv: "adverb", pron: "pronoun",
@@ -129,24 +132,45 @@ function etymologyBase(entry) {
 }
 
 // Collects suffix pairs (word made from base) from every English entry, so the
-// families include words without Persian, like "quickness".
-function familyCollector() {
+// families include words without Persian, like "quickness". With a list of
+// common words (`known`), a family keeps only words on it or in the lexicon,
+// which leaves out rare ones like "quickener".
+function familyCollector(known) {
   const pairs = new Map(); // "word base" -> [word, base]
   const common = new Set(); // words with at least one ordinary sense
+  const posOf = new Map(); // word types of common words, for the -ly and -ness rule
   return {
     add(entry) {
       if (entry.lang_code !== "en" || !PLAIN_WORD.test(entry.word ?? "")) return;
-      if (entry.senses?.some((s) => s.glosses?.length && !s.tags?.some((t) => UNCOMMON_TAGS.has(t)))) common.add(entry.word);
+      const word = entry.word;
+      if (entry.senses?.some((s) => s.glosses?.length && !s.tags?.some((t) => UNCOMMON_TAGS.has(t)))) {
+        common.add(word);
+        if (!known || known.has(word)) posOf.set(word, (posOf.get(word) ?? new Set()).add(entry.pos));
+      }
       const base = etymologyBase(entry);
-      if (base) pairs.set(`${entry.word} ${base}`, [entry.word, base]);
+      if (base) pairs.set(`${word} ${base}`, [word, base]);
       for (const d of entry.derived ?? []) {
-        if (PLAIN_WORD.test(d.word ?? "")) pairs.set(`${d.word} ${entry.word}`, [d.word, entry.word]);
+        if (PLAIN_WORD.test(d.word ?? "")) pairs.set(`${d.word} ${word}`, [d.word, word]);
       }
     },
     // Families that include at least one word of the lexicon, by base word.
     *families(lexiconWords) {
+      const lexicon = new Set(lexiconWords);
+      // Wiktionary doesn't always link the most regular forms, so an adjective
+      // also gets the common words its spelling makes: quick -> quickly (adverb),
+      // quickness (noun).
+      for (const [base, types] of posOf) {
+        if (!types.has("adj") || base.length < 3) continue;
+        for (const stem of stems(base)) {
+          for (const [suffix, pos] of [["ly", "adv"], ["ally", "adv"], ["ness", "noun"]]) {
+            if (posOf.get(stem + suffix)?.has(pos)) pairs.set(`${stem + suffix} ${base}`, [stem + suffix, base]);
+          }
+        }
+      }
+
+      const usable = (w) => common.has(w) && (!known || known.has(w) || lexicon.has(w));
       const valid = [...pairs.values()].filter(([word, base]) =>
-        common.has(word) && common.has(base) && derivesFrom(word, base));
+        usable(word) && usable(base) && derivesFrom(word, base));
       // Joins pairs into families, so quickly and quickness meet through quick.
       const parent = new Map();
       const find = (w) => {
@@ -155,16 +179,17 @@ function familyCollector() {
       };
       for (const [word, base] of valid) parent.set(find(word), find(base));
       const inFamily = new Set(valid.flat());
-      const keep = new Set([...lexiconWords].filter((w) => inFamily.has(w)).map(find));
+      const keep = new Set([...lexicon].filter((w) => inFamily.has(w)).map(find));
       const byBase = Map.groupBy(valid.filter(([word]) => keep.has(find(word))), ([, base]) => base);
       for (const [base, list] of byBase) yield { base, derived: list.map(([word]) => word) };
     },
   };
 }
 
-export async function* buildLexicon(lines, stats = {}) {
+// `common` is an optional set of common English words for the word families.
+export async function* buildLexicon(lines, stats = {}, { common } = {}) {
   const byWord = new Map();
-  const families = familyCollector();
+  const families = familyCollector(common);
   stats.badLines = 0;
   stats.families = 0;
   for await (const line of lines) {

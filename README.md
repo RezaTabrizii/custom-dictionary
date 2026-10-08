@@ -11,7 +11,7 @@ Your own English to Persian dictionary. It starts empty and you fill it.
 - **Hear each word** pronounced. The speaker button plays a real recording from Wiktionary when one exists; otherwise it uses your phone's or browser's built-in voice.
 - **Add your own sentences** under any word, typed or spoken.
 - **Fill in or correct meanings.** A meaning without Persian has an *Add Persian meaning* button, and the pencil next to any meaning lets you change its Persian (typed or spoken), word type, definition and example, or delete it. *Add a meaning* adds one of your own.
-- **Other forms come along.** Adding a word also adds its other forms and groups them: "quick" brings "quickly", "quickness" and "quicken" into a group called *quick*, and adding "quickly" brings the others the same way. They come from the offline data's word families (suffix forms only: *un-* words have their own meaning, and *quicker* or *ran* are forms the lookup already handles). A form you delete isn't added back later.
+- **Other forms come along.** Adding a word also adds its other forms and groups them: "quick" brings "quickly", "quickness" and "quicken" into a group called *quick*, and adding "quickly" brings the others the same way. They come from the offline data's word families (suffix forms only: *un-* words have their own meaning, and *quicker* or *ran* are forms the lookup already handles). Only common words are added (rare ones like "quickener" are left out), at most 8, nearest first. A form you delete isn't added back by itself; the status line says when one was skipped and offers to add it anyway. To see a word's family and what would happen to each word, run `npm run check:family -- quick`.
 - **Group your words** by dragging one onto another: a new group holds both, and you name it right away. Drop words or groups onto a group to move them in; groups can sit inside groups. Use the *Move to the top level* zone that appears over the search box, or a row's top or bottom edge, to move something out. On a phone, hold a word for a moment, then drag. Each group's ⋯ menu renames or ungroups it, and a word's page has a group picker too.
 - **Search** your words in English or Persian from the same box.
 - **Works on the web and Android.** It's a Progressive Web App: open it in Chrome on your phone and choose *Install app*. It also opens offline, showing your last saved words.
@@ -30,6 +30,7 @@ src/lexicon.js           the offline Persian data (kaikki.org / Wiktionary)
 scripts/build-lexicon.js builds the offline data file
 scripts/check-sources.js checks each online dictionary with a real request
 lexicon/en-fa.jsonl.gz   the offline data file, once you've built it
+lexicon/common-words.txt.gz  common English words, used when building the word families
 ```
 
 When you add a word, the server looks it up and stores the answer in SQLite. Words you already have are never looked up twice. Speech input uses the browser's built-in speech recognition, which works in Chrome and Edge on desktop and Android. The mic button is hidden in browsers without it, such as Firefox.
@@ -141,6 +142,6 @@ Vazhe then opens full screen like any other app. If you later want it in the Pla
 
 English definitions without a key: [Merriam-Webster's Learner's Dictionary](https://learnersdictionary.com), the [Free Dictionary API](https://dictionaryapi.dev) and [Wiktionary](https://en.wiktionary.org).
 
-Offline dictionary data: [Wiktionary](https://en.wiktionary.org) via [kaikki.org](https://kaikki.org), under CC BY-SA 4.0 and GFDL.
+Offline dictionary data: [Wiktionary](https://en.wiktionary.org) via [kaikki.org](https://kaikki.org), under CC BY-SA 4.0 and GFDL. Common-word list: words seen at least 50 times in [FrequencyWords](https://github.com/hermitdave/FrequencyWords) (MIT), built from OpenSubtitles.
 
 Fonts: [Geist](https://vercel.com/font) and [Vazirmatn](https://github.com/rastikerdar/vazirmatn), both under the SIL Open Font License. Icons: [Phosphor](https://phosphoricons.com) (MIT).

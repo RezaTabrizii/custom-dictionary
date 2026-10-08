@@ -285,6 +285,15 @@ button { cursor: pointer; }
   color: var(--muted);
 }
 .status.error { color: var(--danger); }
+.link-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 
 /* ---------- Word list ---------- */
 

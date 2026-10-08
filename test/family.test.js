@@ -51,6 +51,31 @@ test("families come from etymologies and derived terms, without compounds, rare 
   assert.deepEqual(records.filter((r) => r.base), [{ base: "quick", derived: ["quickly", "quickness", "quicken"] }]);
 });
 
+test("rare words are left out of a family when a list of common words is given", async () => {
+  const records = [];
+  const common = new Set(["quick", "quickly", "quickness"]);
+  for await (const r of buildLexicon(ENTRIES, {}, { common })) records.push(r);
+  assert.deepEqual(records.filter((r) => r.base), [{ base: "quick", derived: ["quickly", "quickness"] }]);
+});
+
+test("an adjective's -ly and -ness words join its family even when Wiktionary doesn't link them", async () => {
+  const lines = [
+    { word: "swift", pos: "adj", senses: [sense("Fast.")], translations: fa("تیز") },
+    { word: "swiftly", pos: "adv", senses: [sense("In a swift manner.")] },
+    { word: "swiftness", pos: "noun", senses: [sense("Speed.")] },
+    { word: "swiftlet", pos: "noun", senses: [sense("A bird.")] },
+    // "only" isn't a form of "on": the base word is too short.
+    { word: "on", pos: "adj", senses: [sense("Working.")], translations: fa("روشن") },
+    { word: "only", pos: "adv", senses: [sense("Alone.")] },
+    // "ear" is a noun, so "early" isn't its adverb.
+    { word: "ear", pos: "noun", senses: [sense("Hearing organ.")], translations: fa("گوش") },
+    { word: "early", pos: "adv", senses: [sense("Soon.")] },
+  ].map((e) => JSON.stringify({ lang_code: "en", ...e }));
+  const records = [];
+  for await (const r of buildLexicon(lines)) records.push(r);
+  assert.deepEqual(records.filter((r) => r.base), [{ base: "swift", derived: ["swiftly", "swiftness"] }]);
+});
+
 test("a family is found from any of its words, nearest first", async () => {
   const records = await build();
   const db = openDb();
@@ -87,6 +112,7 @@ test("adding a word adds its other forms and groups them", async (t) => {
 
   const result = await call(`/words/${quickly.id}/family`, "POST");
   assert.deepEqual(result.added.map((w) => w.word), ["quick"]);
+  assert.deepEqual(result.failed, ["quickness"]);
   assert.deepEqual(lookups, ["quickly", "quick", "quickness"]);
   assert.deepEqual(result.groups, [{ id: result.groupId, name: "quick", parentId: null }]);
   assert.ok(result.words.every((w) => w.groupId === result.groupId));
@@ -103,9 +129,28 @@ test("a family word the user deleted isn't added back", async (t) => {
 
   const again = await call("/words", "POST", { word: "quick" });
   assert.deepEqual(again.related, ["quickness"]); // quickly was deleted by the user
+  assert.deepEqual(again.skipped, ["quickly"]);
+  let result = await call(`/words/${again.id}/family`, "POST");
+  assert.deepEqual([result.added, result.skipped], [[], ["quickly"]]);
+  // Asked for, it's added after all.
+  result = await call(`/words/${again.id}/family`, "POST", { include: ["quickly"] });
+  assert.deepEqual(result.added.map((w) => w.word), ["quickly"]);
+  await call(`/words/${result.added[0].id}`, "DELETE");
   // Adding it by hand brings it back as normal.
   assert.equal((await call("/words", "POST", { word: "quickly" })).word, "quickly");
-  assert.ok(lookups.filter((w) => w === "quickly").length === 2);
+  assert.equal(lookups.filter((w) => w === "quickly").length, 3);
+});
+
+test("a new word is grouped with relatives already saved, even when none can be added", async (t) => {
+  const { call, close } = await setup();
+  t.after(close);
+  const quickly = await call("/words", "POST", { word: "quickly" }); // saved alone
+  const quick = await call("/words", "POST", { word: "quick" });
+  assert.equal(quick.hasFamily, true);
+  const result = await call(`/words/${quick.id}/family`, "POST");
+  assert.deepEqual(result.added, []); // quickness can't be looked up
+  const grouped = result.words.filter((w) => w.groupId === result.groupId).map((w) => w.id);
+  assert.deepEqual(grouped.sort(), [quickly.id, quick.id].sort());
 });
 
 test("family words join a group the family already has, and others stay where the user put them", () => {

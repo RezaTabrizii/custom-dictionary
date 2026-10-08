@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { createGzip } from "node:zlib";
-import { buildLexicon, LEXICON_FILE, readLines } from "../src/lexicon.js";
+import { buildLexicon, COMMON_WORDS_FILE, LEXICON_FILE, readLines } from "../src/lexicon.js";
 import { download } from "./download.js";
 
 const DEFAULT_SOURCE = "https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl";
@@ -42,8 +42,10 @@ async function* toJsonl(records) {
 
 console.log(`Building from ${source}`);
 const stats = {};
+const common = new Set();
+for await (const word of readLines(createReadStream(COMMON_WORDS_FILE), true)) common.add(word.trim());
 const lines = readLines(createReadStream(source), source.endsWith(".gz"));
-await pipeline(toJsonl(buildLexicon(counted(lines), stats)), createGzip({ level: 9 }), createWriteStream(out));
+await pipeline(toJsonl(buildLexicon(counted(lines), stats, { common })), createGzip({ level: 9 }), createWriteStream(out));
 
 console.log(`Wrote ${written.toLocaleString()} words with Persian meanings and ${stats.families.toLocaleString()} word families to ${out}`);
 if (stats.badLines) console.warn(`Skipped ${stats.badLines} unreadable line(s) in the source file.`);

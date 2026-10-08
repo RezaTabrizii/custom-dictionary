@@ -323,12 +323,12 @@ async function addWord(raw) {
   setStatus();
   renderList();
   try {
-    const { related = [], ...entry } = await api("/words", { method: "POST", body: { word } });
+    const { related = [], skipped, hasFamily, ...entry } = await api("/words", { method: "POST", body: { word } });
     if (!words.some((w) => w.id === entry.id)) words.unshift(entry);
     if (entry.existing) setStatus(`"${entry.word}" is already in your dictionary.`);
     els.input.value = "";
     select(entry.id);
-    if (related.length) addRelatives(entry, related);
+    if (hasFamily) addRelatives(entry, related);
   } catch (err) {
     setStatus(err.message, true);
   } finally {
@@ -338,20 +338,40 @@ async function addWord(raw) {
   }
 }
 
+const quoteList = (list) => {
+  const q = list.map((w) => `"${w}"`);
+  return q.length > 1 ? `${q.slice(0, -1).join(", ")} and ${q.at(-1)}` : q[0];
+};
+
 // Adds the other forms of a new word in the background and groups the family.
-async function addRelatives(entry, names) {
+// `include` lists forms the user deleted before but now wants added.
+async function addRelatives(entry, names, include = []) {
   relatives = names;
-  setStatus(`Adding other forms of "${entry.word}": ${names.join(", ")}…`);
+  if (names.length) setStatus(`Adding other forms of "${entry.word}": ${names.join(", ")}…`);
+  renderList();
   try {
-    const result = await api(`/words/${entry.id}/family`, { method: "POST" });
+    const result = await api(`/words/${entry.id}/family`, { method: "POST", body: { include } });
     words.unshift(...result.added.toReversed());
     applyTree(result);
-    const added = result.added.map((w) => `"${w.word}"`);
-    setStatus(added.length
-      ? `Also added ${added.length > 1 ? `${added.slice(0, -1).join(", ")} and ${added.at(-1)}` : added[0]}, grouped with "${entry.word}".`
-      : "");
     relatives = [];
     render();
+
+    const parts = [];
+    if (result.added.length) parts.push(`Also added ${quoteList(result.added.map((w) => w.word))}.`);
+    if (result.failed.length) parts.push(`Couldn't look up ${quoteList(result.failed)}.`);
+    if (result.skipped.length) {
+      parts.push(`Skipped ${quoteList(result.skipped)}, which you deleted before.`);
+    }
+    setStatus(parts.join(" "));
+    if (result.skipped.length) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "link-btn";
+      btn.textContent = result.skipped.length > 1 ? "Add them anyway" : "Add it anyway";
+      btn.addEventListener("click", () => addRelatives(entry, result.skipped, result.skipped));
+      els.status.append(" ", btn);
+    }
+
     if (result.groupId) {
       collapsed.delete(result.groupId);
       saveCollapsed();

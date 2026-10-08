@@ -46,9 +46,9 @@ export function createApp({ db, lookup, password = "" }) {
       const existing = db.findWord(entry.word);
       if (existing) return res.json({ ...existing, existing: true });
       const word = db.addWord(entry);
-      // Other forms of the word (quick -> quickly, quickness) the client then
-      // asks to add with POST /words/:id/family.
-      res.status(201).json({ ...word, related: missingRelatives(word.word) });
+      // Other forms of the word (quick -> quickly, quickness): the client then
+      // asks POST /words/:id/family to add the missing ones and group them.
+      res.status(201).json({ ...word, ...familyOf(word.word) });
     } catch (err) {
       if (err instanceof LookupError) return res.status(422).json({ error: err.message });
       console.error("Lookup failed:", err);
@@ -56,30 +56,42 @@ export function createApp({ db, lookup, password = "" }) {
     }
   });
 
-  // Relatives that aren't saved and weren't deleted by the user.
-  const missingRelatives = (word) =>
-    db.wordFamily(word).members.filter((m) => !db.findWord(m) && !db.isDismissed(m));
+  // A word's family: whether it has one, the relatives to add, and those
+  // skipped because the user deleted them before.
+  const familyOf = (word) => {
+    const { members } = db.wordFamily(word);
+    const missing = members.filter((m) => !db.findWord(m));
+    return {
+      hasFamily: members.length > 0,
+      related: missing.filter((m) => !db.isDismissed(m)),
+      skipped: missing.filter((m) => db.isDismissed(m)),
+    };
+  };
 
-  // Adds the missing other forms of a word and groups the family.
+  // Adds the missing other forms of a word and groups the family. Words the
+  // user deleted are skipped unless listed in `include`.
   api.post("/words/:id/family", async (req, res) => {
     const word = db.getWord(Number(req.params.id));
     if (!word) return notFound(res);
     const { name, members } = db.wordFamily(word.word);
+    const include = new Set(Array.isArray(req.body?.include) ? req.body.include : []);
 
     const added = [];
-    for (const m of members.filter((x) => !db.findWord(x) && !db.isDismissed(x))) {
+    const failed = [];
+    for (const m of members.filter((x) => !db.findWord(x) && (include.has(x) || !db.isDismissed(x)))) {
       try {
         const entry = await lookup(m);
         // A lookup can answer with a word that's already saved (its base form).
         if (!db.findWord(entry.word)) added.push(db.addWord(entry));
       } catch (err) {
         console.error(`Couldn't add "${m}": ${err.message}`);
+        failed.push(m);
       }
     }
 
     const saved = [word.word, ...members].map((m) => db.findWord(m)).filter(Boolean);
     const groupId = saved.length >= 2 ? db.groupFamily(saved.map((w) => w.id), name) : null;
-    res.json({ added: added.map((w) => db.getWord(w.id)), groupId, ...db.tree() });
+    res.json({ added: added.map((w) => db.getWord(w.id)), failed, skipped: familyOf(word.word).skipped, groupId, ...db.tree() });
   });
 
   api.delete("/words/:id", (req, res) => {
