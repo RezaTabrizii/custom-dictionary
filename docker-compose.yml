@@ -1,12 +1,29 @@
 # docker compose up -d --build          the app on http://<server>:3000 (put your own https proxy in front)
 # docker compose --profile https up -d --build
 #                                       also starts Caddy, which gets a free https certificate for DOMAIN
+#
+# Everything the app saves is in ./data next to this file (dictionary.db, backups/).
 services:
+  # Makes ./data writable by the app, which runs as user 1000, then exits.
+  # Docker creates a missing ./data owned by root, so this runs before every start.
+  data-permissions:
+    image: alpine:3.20
+    user: root
+    command: ["chown", "1000:1000", "/data"]
+    volumes:
+      - ./data:/data
+    network_mode: none
+    cap_drop: [ALL]
+    cap_add: [CHOWN]
+
   app:
     build: .
     image: vazhe
     restart: unless-stopped
     init: true
+    depends_on:
+      data-permissions:
+        condition: service_completed_successfully
     env_file: .env
     environment:
       DATA_DIR: /data
@@ -18,7 +35,7 @@ services:
       # Set BIND=127.0.0.1 in .env when a proxy on the same server (or Caddy below) serves https.
       - "${BIND:-0.0.0.0}:${HOST_PORT:-3000}:3000"
     volumes:
-      - vazhe-data:/data
+      - ./data:/data
     read_only: true
     tmpfs:
       - /tmp
@@ -43,6 +60,5 @@ services:
       - caddy-config:/config
 
 volumes:
-  vazhe-data:
   caddy-data:
   caddy-config:

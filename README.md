@@ -146,7 +146,7 @@ The address changes every time you start the tunnel, and an installed app keeps 
 
 ## Put it online
 
-The app is a single Node server, and everything it saves (accounts, words, groups) lives in one SQLite file. The included `Dockerfile` and `docker-compose.yml` run it on any server with Docker, with that file kept in a Docker volume so it survives updates.
+The app is a single Node server, and everything it saves (accounts, words, groups) lives in one SQLite file. The included `Dockerfile` and `docker-compose.yml` run it on any server with Docker, with that file kept in the `data` folder next to `docker-compose.yml` (for example `~/vazhe/data/dictionary.db`), so it survives updates and rebuilds.
 
 ### Deploy with Docker on your server
 
@@ -185,7 +185,7 @@ docker compose exec app node scripts/users.js add sara        # create an accoun
 docker compose exec app node scripts/users.js delete sara     # delete an account
 ```
 
-**Update** to the latest version from GitHub (your data stays in the volume):
+**Update** to the latest version from GitHub (your data stays in `data/`):
 
 ```bash
 git pull
@@ -195,19 +195,20 @@ docker compose --profile https up -d --build    # or without --profile https
 **Back up** the database. This is safe while the app is running:
 
 ```bash
-docker compose exec app node scripts/backup.js           # writes /data/backups/dictionary-<date>.db
-docker compose cp app:/data/backups ./backups            # copies the backups out to the server
+docker compose exec app node scripts/backup.js     # writes data/backups/dictionary-<date>.db
 ```
 
-Keep a copy somewhere other than the server too. To **restore** one from `./backups`, stop the app, put the copy back, and start it again:
+Keep a copy somewhere other than the server too, for example by downloading `data/backups` to your PC with `scp`. To **restore** one, put it in `data/backups/`, stop the app, put the copy back, and start it again:
 
 ```bash
 docker compose stop app
-docker compose run --rm --no-deps -v ./backups:/backups:ro app node scripts/restore.js /backups/dictionary-2026-10-09-12-00-00.db
+docker compose run --rm --no-deps app node scripts/restore.js /data/backups/dictionary-2026-10-09-12-00-00.db
 docker compose start app
 ```
 
-Note: `docker compose down -v` deletes the volumes, and with them every account and word. Use `docker compose down` (without `-v`) to stop everything.
+To **move your dictionary from your PC** to the server, run `npm run backup` on the PC, copy the file into `~/vazhe/data/backups/` on the server (with `scp`), and restore it as above.
+
+Deleting the `data` folder deletes every account and word, so back it up before cleaning up the server.
 
 ### Other hosts
 
