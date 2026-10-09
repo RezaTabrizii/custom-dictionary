@@ -1,0 +1,48 @@
+# docker compose up -d --build          the app on http://<server>:3000 (put your own https proxy in front)
+# docker compose --profile https up -d --build
+#                                       also starts Caddy, which gets a free https certificate for DOMAIN
+services:
+  app:
+    build: .
+    image: vazhe
+    restart: unless-stopped
+    init: true
+    env_file: .env
+    environment:
+      DATA_DIR: /data
+      PORT: 3000
+      # Requests from Caddy or a proxy on this server arrive from a private Docker
+      # address, so trust those for the real visitor address and https.
+      TRUST_PROXY: ${TRUST_PROXY:-uniquelocal}
+    ports:
+      # Set BIND=127.0.0.1 in .env when a proxy on the same server (or Caddy below) serves https.
+      - "${BIND:-0.0.0.0}:${HOST_PORT:-3000}:3000"
+    volumes:
+      - vazhe-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+
+  caddy:
+    image: caddy:2-alpine
+    profiles: [https]
+    restart: unless-stopped
+    depends_on: [app]
+    environment:
+      DOMAIN: ${DOMAIN:-}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  vazhe-data:
+  caddy-data:
+  caddy-config:

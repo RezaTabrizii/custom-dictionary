@@ -1,6 +1,17 @@
+# Only what the image needs; never secrets or local data.
+.git
+.github
+.claude
+.env
+.env.*
+!.env.example
 node_modules
 data
-.env
-.git
+test
 lexicon/*.jsonl
 lexicon/*.part
+*.md
+Dockerfile
+docker-compose.yml
+Caddyfile
+backups

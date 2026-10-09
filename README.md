@@ -115,7 +115,11 @@ npm run users                       # list accounts
 npm run users -- add sara           # create an account (asks for the password)
 npm run users -- password sara      # set a new password and sign them out everywhere
 npm run users -- delete sara        # delete an account and all its words
+npm run backup                      # save a copy of the database to data/backups
+npm run restore -- <file>           # put a backup back (stop the app first)
 ```
+
+With Docker, run these inside the container instead (see [Day to day](#day-to-day)).
 
 ### Use it on your phone while it runs on your PC
 
@@ -142,16 +146,72 @@ The address changes every time you start the tunnel, and an installed app keeps 
 
 ## Put it online
 
-The app is a single Node server, and your dictionary lives in one file (`data/dictionary.db`). Any host that runs Node or Docker **and keeps a persistent disk** will do, for example Fly.io, Railway or Render (with a disk), or your own VPS.
+The app is a single Node server, and everything it saves (accounts, words, groups) lives in one SQLite file. The included `Dockerfile` and `docker-compose.yml` run it on any server with Docker, with that file kept in a Docker volume so it survives updates.
 
-1. Set the environment variables:
-   - `ANTHROPIC_API_KEY`: optional; leave it unset for the free lookup
-   - `MERRIAM_WEBSTER_KEY`: optional; your Merriam-Webster Learner's key
-   - `SIGNUP_CODE`: the invite code for new accounts; set it before the first visit (see [Accounts and security](#accounts-and-security))
-   - `TRUST_PROXY`: `1` when the host puts an https proxy in front of the app (most do), so sign-in cookies are marked Secure
-   - `DATA_DIR`: a folder on the persistent disk (the Docker image uses `/data`)
-2. Deploy with the included `Dockerfile`, or run `npm ci --omit=dev && npm start`.
-3. Serve it over HTTPS. Phones only allow the microphone and app install on HTTPS sites; most hosts do this for you.
+### Deploy with Docker on your server
+
+You need a server with Docker and the Compose plugin, and, for https, a domain name whose DNS points at the server.
+
+```bash
+git clone https://github.com/RezaTabrizii/custom-dictionary.git vazhe
+cd vazhe
+cp .env.example .env
+nano .env        # set SIGNUP_CODE, and DOMAIN for https (see below)
+```
+
+Then start it one of two ways:
+
+- **With automatic https (recommended).** Set `DOMAIN=dict.example.com` and `BIND=127.0.0.1` in `.env`, open ports 80 and 443 in the server's firewall, and run:
+
+  ```bash
+  docker compose --profile https up -d --build
+  ```
+
+  This also starts [Caddy](https://caddyserver.com), which gets a free Let's Encrypt certificate for your domain and renews it by itself. Open `https://dict.example.com`.
+
+- **Behind your own proxy** (nginx, Traefik, a panel such as Coolify or CapRover) that already handles https: run `docker compose up -d --build` and point the proxy at port 3000. With a proxy on the same server, also set `BIND=127.0.0.1` so the app isn't reachable around it.
+
+Then open the site and create your account with the invite code. Set `SIGNUP_CODE` **before** this first visit: with it set, nobody without the code can take the first account.
+
+The container runs as an unprivileged user on a read-only file system, restarts after crashes and reboots, and reports its health to Docker (`docker compose ps` shows `healthy`). `TRUST_PROXY` is preset to trust private Docker addresses, so it works with Caddy or a proxy on the same server without changes.
+
+### Day to day
+
+```bash
+docker compose logs -f app                               # see what it's doing
+docker compose exec app node scripts/users.js            # list accounts
+docker compose exec app node scripts/users.js password sara   # reset a password
+docker compose exec app node scripts/users.js add sara        # create an account
+docker compose exec app node scripts/users.js delete sara     # delete an account
+```
+
+**Update** to the latest version from GitHub (your data stays in the volume):
+
+```bash
+git pull
+docker compose --profile https up -d --build    # or without --profile https
+```
+
+**Back up** the database. This is safe while the app is running:
+
+```bash
+docker compose exec app node scripts/backup.js           # writes /data/backups/dictionary-<date>.db
+docker compose cp app:/data/backups ./backups            # copies the backups out to the server
+```
+
+Keep a copy somewhere other than the server too. To **restore** one from `./backups`, stop the app, put the copy back, and start it again:
+
+```bash
+docker compose stop app
+docker compose run --rm --no-deps -v ./backups:/backups:ro app node scripts/restore.js /backups/dictionary-2026-10-09-12-00-00.db
+docker compose start app
+```
+
+Note: `docker compose down -v` deletes the volumes, and with them every account and word. Use `docker compose down` (without `-v`) to stop everything.
+
+### Other hosts
+
+Any host that runs Node 22.13+ or Docker **and keeps a persistent disk** works too (Fly.io, Railway or Render with a disk). Set the variables from `.env.example` there, with `DATA_DIR` on the persistent disk (the Docker image uses `/data`) and `TRUST_PROXY=1`, deploy the `Dockerfile` or run `npm ci --omit=dev && npm start`, and serve it over https. Phones only allow the microphone and app install on https sites.
 
 ## Install on Android
 

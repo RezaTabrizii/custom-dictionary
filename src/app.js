@@ -50,6 +50,8 @@ export function createApp({ db, lookup, signupCode = "", trustProxy = false }) {
     if (req.secure) res.set("Strict-Transport-Security", "max-age=31536000");
     next();
   });
+  // For Docker's health check and uptime monitors.
+  app.get("/healthz", (req, res) => res.set("Cache-Control", "no-store").type("text").send("ok"));
   app.use(express.json({ limit: "16kb" }));
   app.use(express.static(PUBLIC_DIR));
 

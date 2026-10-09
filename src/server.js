@@ -39,10 +39,21 @@ console.log(signupCode
 if (process.env.APP_PASSWORD) console.warn("APP_PASSWORD is no longer used: everyone signs in with their own account.");
 
 const port = Number(process.env.PORT ?? 3000);
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Vazhe is running on http://localhost:${port}`);
   // Addresses other devices on the same Wi-Fi, like your phone, can use.
   for (const net of Object.values(networkInterfaces()).flat()) {
     if (net.family === "IPv4" && !net.internal) console.log(`  on your network: http://${net.address}:${port}`);
   }
 });
+
+// Docker stops containers with SIGTERM: finish open requests, then close the database cleanly.
+for (const signal of ["SIGTERM", "SIGINT"]) {
+  process.once(signal, () => {
+    server.close(() => {
+      db.close();
+      process.exit(0);
+    });
+    setTimeout(() => process.exit(0), 5000).unref();
+  });
+}

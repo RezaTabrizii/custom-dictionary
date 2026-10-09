@@ -3,3 +3,6 @@ data/
 .env
 lexicon/*.jsonl
 lexicon/*.part
+
+# Backups copied out of the container
+backups/

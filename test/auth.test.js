@@ -215,3 +215,21 @@ test("a dictionary from before accounts becomes the first account's", async () =
   reza.deleteWord(1);
   assert.equal(new DatabaseSync(file).prepare("SELECT count(*) AS n FROM examples").get().n, 0);
 });
+
+test("the health check answers without signing in", async (t) => {
+  const { base, close } = await setup();
+  t.after(close);
+  const res = await fetch(base.replace(/\/api$/, "/healthz"));
+  assert.equal(res.status, 200);
+  assert.equal(await res.text(), "ok");
+});
+
+test("a backup is a full copy of the database", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "vazhe-"));
+  const db = openDb(join(dir, "dictionary.db"));
+  db.forUser(db.createUser("reza", "not-a-real-hash")).addWord({ word: "run", phonetic: "", senses: [] });
+  db.backup(join(dir, "copy.db"));
+  db.close();
+  const copy = openDb(join(dir, "copy.db"));
+  assert.deepEqual(copy.forUser(copy.userByName("reza").id).listWords().map((w) => w.word), ["run"]);
+});

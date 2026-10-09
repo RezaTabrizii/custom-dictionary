@@ -15,7 +15,9 @@
     "build:lexicon": "node scripts/build-lexicon.js",
     "check:sources": "node --env-file-if-exists=.env scripts/check-sources.js",
     "check:family": "node --env-file-if-exists=.env scripts/check-family.js",
-    "users": "node --env-file-if-exists=.env scripts/users.js"
+    "users": "node --env-file-if-exists=.env scripts/users.js",
+    "backup": "node --env-file-if-exists=.env scripts/backup.js",
+    "restore": "node --env-file-if-exists=.env scripts/restore.js"
   },
   "license": "MIT",
   "dependencies": {

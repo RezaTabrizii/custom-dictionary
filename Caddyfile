@@ -1,0 +1,6 @@
+# Serves Vazhe over https with an automatic Let's Encrypt certificate.
+# Point DOMAIN's DNS at this server and open ports 80 and 443 first.
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:3000
+}

@@ -14,6 +14,9 @@ export function openDb(file = ":memory:") {
   const db = new DatabaseSync(file);
   db.exec(`
     PRAGMA foreign_keys = ON;
+    -- Lets the users and backup scripts work while the server is running.
+    PRAGMA journal_mode = WAL;
+    PRAGMA busy_timeout = 5000;
     CREATE TABLE IF NOT EXISTS users (
       id            INTEGER PRIMARY KEY,
       username      TEXT NOT NULL UNIQUE COLLATE NOCASE,
@@ -136,6 +139,14 @@ export function openDb(file = ":memory:") {
   const stores = new Map();
 
   return {
+    // Writes a consistent copy of the whole database to file, even while it's in use.
+    backup(file) {
+      db.prepare("VACUUM INTO ?").run(file);
+    },
+    close() {
+      db.close();
+    },
+
     /* ---------- Accounts and sessions ---------- */
 
     userCount() {
