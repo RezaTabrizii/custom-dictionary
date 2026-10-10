@@ -185,12 +185,7 @@ docker compose exec app node scripts/users.js add sara        # create an accoun
 docker compose exec app node scripts/users.js delete sara     # delete an account
 ```
 
-**Update** to the latest version from GitHub (your data stays in `data/`):
-
-```bash
-git pull
-docker compose --profile https up -d --build    # or without --profile https
-```
+**Update** to the latest version from GitHub with `./deploy.sh`. It backs up the database, pulls the code, rebuilds and restarts the app (with Caddy when `DOMAIN` is set), and waits until the app is healthy. Your data stays in `data/`.
 
 **Back up** the database. This is safe while the app is running:
 
