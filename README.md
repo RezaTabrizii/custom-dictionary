@@ -169,7 +169,7 @@ Then start it one of two ways:
 
   This also starts [Caddy](https://caddyserver.com), which gets a free Let's Encrypt certificate for your domain and renews it by itself. Open `https://dict.example.com`.
 
-- **Behind your own proxy** (nginx, Traefik, a panel such as Coolify or CapRover) that already handles https: run `docker compose up -d --build` and point the proxy at port 3000. With a proxy on the same server, also set `BIND=127.0.0.1` so the app isn't reachable around it.
+- **Behind your own proxy** (nginx, Traefik, a panel such as Coolify or CapRover) that already handles https, for example when starting Caddy fails with `address already in use` on port 80: leave `DOMAIN` empty, set `BIND=127.0.0.1`, run `./deploy.sh`, and point the proxy at `HOST_PORT` (3000 unless you changed it). For nginx, `deploy/nginx.conf` is ready to use; the steps are at its top.
 
 Then open the site and create your account with the invite code. Set `SIGNUP_CODE` **before** this first visit: with it set, nobody without the code can take the first account.
 
