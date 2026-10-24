@@ -91,7 +91,7 @@ test("loading leaves rare words out of families, also from files built without t
   writeFileSync(file, gzipSync(lines.map((l) => JSON.stringify(l)).join("\n")));
   writeFileSync(commonFile, gzipSync("kindly\nkindness\n"));
   const db = openDb();
-  await loadLexicon(db, file, commonFile);
+  await loadLexicon(db, file, commonFile, join(dir, "no-extra.tsv"));
   assert.deepEqual(db.wordFamily("kind").members, ["kindly", "kindness"]);
 });
 

@@ -34,6 +34,7 @@ scripts/users.js         manages accounts from the command line
 scripts/check-sources.js checks each online dictionary with a real request
 lexicon/en-fa.jsonl.gz   the offline data file, once you've built it
 lexicon/common-words.txt.gz  common English words, used when building the word families
+lexicon/claude-fa.tsv    extra Persian meanings written with Claude Code, for common words Wiktionary leaves out
 ```
 
 When you add a word, the server looks it up and stores the answer in SQLite. Words you already have are never looked up twice. Speech input uses the browser's built-in speech recognition, which works in Chrome and Edge on desktop and Android. The mic button is hidden in browsers without it, such as Firefox.
@@ -47,7 +48,7 @@ When you add a word, the server looks it up and stores the answer in SQLite. Wor
 | | Source |
 |---|---|
 | Word types, English definitions, examples, pronunciation and its recording | The first online dictionary that knows the word, in this order:<br>1. [Merriam-Webster Learner's](https://dictionaryapi.com), when `MERRIAM_WEBSTER_KEY` is set (free key, 1,000 lookups a day)<br>2. [Free Dictionary API](https://dictionaryapi.dev) (no key)<br>3. [Wiktionary](https://en.wiktionary.org/api/rest_v1/) from Wikimedia (no key, no pronunciation) |
-| Persian meanings | The offline dictionary (kaikki.org / Wiktionary data) |
+| Persian meanings | The offline dictionary (kaikki.org / Wiktionary data), plus `lexicon/claude-fa.tsv` |
 
 Each English meaning gets the Persian of the offline meaning with the same word type and the closest definition. Inflected forms are looked up by their base word ("ran" finds "run"). If a dictionary is down or doesn't know the word, the next one is asked. If none of them has it:
 
@@ -55,6 +56,18 @@ Each English meaning gets the Persian of the offline meaning with the same word 
 - **The offline dictionary doesn't have it either:** you get a "not found" message.
 
 A word found online but missing from the offline dictionary is saved with English only, and its page says no Persian meaning was found.
+
+#### Adding Persian meanings with Claude Code
+
+Wiktionary has no Persian for many everyday words ("keep", "afraid", "probably"), so `lexicon/claude-fa.tsv` fills them in. Its meanings were written with Claude Code, which a Claude Pro or Max plan includes, so they cost nothing per lookup and need no API key. To add more, open Claude Code in this project and ask, for example: *"add Persian meanings to lexicon/claude-fa.tsv for these words: …"*, then redeploy. Words that showed "no Persian meaning was found" are good candidates.
+
+Each line is one meaning: the word, its word type, its Persian meanings separated by `،`, and optionally its other forms separated by `,`. A line `picked	=pick` only adds a form to a word that's already in the offline dictionary. For a word the offline dictionary already has, only word types it doesn't cover yet are added. The file is loaded together with the offline dictionary on start, and again whenever it changes.
+
+```
+keep	verb	نگه داشتن، ادامه دادن، حفظ کردن	keeps,keeping,kept
+keep	noun	خرجی، برج اصلی قلعه
+picked	=pick
+```
 
 To check that every online dictionary works (and your Merriam-Webster key), run:
 

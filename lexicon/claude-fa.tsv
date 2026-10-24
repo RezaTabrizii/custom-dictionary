@@ -1,0 +1,828 @@
+# Persian meanings written with Claude for common English words that the
+# Wiktionary lexicon (en-fa.jsonl.gz) has no Persian for. Loaded with it on start.
+# word	word type	Persian meanings separated by ،	other forms separated by , (optional)
+# word	=base	adds "word" as a form of a word already in the lexicon
+of	preposition	از، مال، ـِ
+out	adverb	بیرون، خارج
+out	adjective	بیرون، خاموش، تمام‌شده
+out	preposition	بیرون از، از
+off	adverb	دور، خاموش، جدا
+off	preposition	از روی، جدا از
+off	adjective	خاموش، لغوشده
+any	determiner	هر، هیچ، کمی
+any	pronoun	هر کدام، هیچ کدام
+into	preposition	به، به داخلِ، درون
+anything	pronoun	هر چیزی، چیزی، هیچ چیز
+away	adverb	دور، دور از اینجا، غایب
+keep	verb	نگه داشتن، ادامه دادن، حفظ کردن	keeps,keeping,kept
+keep	noun	خرجی، برج اصلی قلعه
+ever	adverb	هرگز، تا به حال، همیشه
+guy	noun	مرد، آدم، یارو	guys
+lot	noun	مقدار زیاد، خیلی، قطعه زمین	lots
+lot	pronoun	خیلی، بسیار
+else	adverb	دیگر، وگرنه
+care	noun	مراقبت، توجه، دقت
+care	verb	اهمیت دادن، مراقبت کردن، دلواپس بودن	cares,cared,caring
+ago	adverb	پیش، قبل
+probably	adverb	احتمالاً، شاید
+exactly	adverb	دقیقاً، درست
+whatever	pronoun	هر چه، هر چیزی که
+whatever	determiner	هر، هر گونه
+different	adjective	متفاوت، دیگر، گوناگون
+afraid	adjective	ترسیده، هراسان، متأسف
+quite	adverb	کاملاً، نسبتاً، خیلی
+shall	verb	خواهم، باید
+nobody	pronoun	هیچ کس
+supposed	adjective	قرار، فرضی، به اصطلاح
+anymore	adverb	دیگر، دیگر نه
+along	preposition	در امتداد، در طول
+along	adverb	همراه، جلو
+ahead	adverb	جلو، پیش، پیشاپیش
+alright	adjective	خوب، روبه‌راه
+alright	adverb	باشه، خوب
+anybody	pronoun	هر کسی، کسی، هیچ کس
+sick	adjective	بیمار، مریض، حالت تهوع
+cannot	verb	نمی‌توان، نمی‌تواند
+glad	adjective	خوشحال، شاد
+daddy	noun	بابا، پدر
+rather	adverb	نسبتاً، ترجیحاً، بلکه
+bet	verb	شرط بستن	bets,betting
+bet	noun	شرط، شرط‌بندی
+absolutely	adverb	مطلقاً، کاملاً، حتماً
+worth	adjective	ارزش داشتن، می‌ارزد
+worth	noun	ارزش، بها
+amazing	adjective	شگفت‌انگیز، حیرت‌آور
+wake	verb	بیدار شدن، بیدار کردن	wakes,waking,woke,woken
+wake	noun	مراسم سوگواری، رد، دنباله
+worse	adjective	بدتر
+worse	adverb	بدتر
+suppose	verb	فرض کردن، گمان کردن	supposes,supposing
+completely	adverb	کاملاً، به طور کامل
+totally	adverb	کاملاً، تماماً
+tv	noun	تلویزیون
+instead	adverb	به جای آن، در عوض
+christmas	noun	کریسمس، عید میلاد مسیح
+seriously	adverb	جداً، به طور جدی
+entire	adjective	تمام، کامل، کل
+across	preposition	آن طرفِ، در سراسرِ، از عرضِ
+across	adverb	به آن طرف، از عرض
+lovely	adjective	دوست‌داشتنی، زیبا، دلپذیر
+anywhere	adverb	هر جا، هیچ جا، جایی
+certain	adjective	مطمئن، معین، قطعی
+relax	verb	آرام گرفتن، استراحت کردن، شل کردن	relaxes,relaxed,relaxing
+america	noun	آمریکا
+agent	noun	مأمور، نماینده، عامل	agents
+mess	noun	آشفتگی، بی‌نظمی، شلوغی
+mess	verb	به هم ریختن، خراب کردن	messes,messed,messing
+within	preposition	در داخلِ، ظرفِ، در محدودهٔ
+mama	noun	مامان، مادر
+realize	verb	فهمیدن، پی بردن، متوجه شدن	realizes,realized,realizing,realise,realised
+involved	adjective	درگیر، دخیل، پیچیده
+obviously	adverb	آشکارا، معلوم است که
+cop	noun	پلیس، پاسبان	cops
+quit	verb	ترک کردن، دست کشیدن، استعفا دادن	quits,quitting
+mrs	noun	خانم
+mr	noun	آقا
+upon	preposition	روی، بر، به محضِ
+worst	adjective	بدترین
+worst	adverb	بدتر از همه
+grand	adjective	بزرگ، باشکوه، عالی
+nervous	adjective	عصبی، مضطرب، نگران
+bother	verb	مزاحم شدن، اذیت کردن، به خود زحمت دادن	bothers,bothered,bothering
+bother	noun	زحمت، دردسر
+favor	noun	لطف، محبت، خواهش	favors,favour,favours
+favor	verb	طرفداری کردن، ترجیح دادن	favored,favoring
+awesome	adjective	فوق‌العاده، عالی، هیبت‌انگیز
+spot	noun	لکه، نقطه، جا	spots
+spot	verb	دیدن، تشخیص دادن	spotted,spotting
+apart	adverb	جدا، از هم، دور از هم
+bunch	noun	دسته، خوشه، عده
+according	adverb	بر طبقِ، به گفتهٔ
+admit	verb	اعتراف کردن، پذیرفتن، راه دادن	admits,admitted,admitting
+indeed	adverb	در واقع، به راستی، واقعاً
+silly	adjective	احمقانه، مسخره، بی‌معنی
+above	preposition	بالای، بالاتر از، بیش از
+above	adverb	بالا، در بالا
+however	adverb	با این حال، اما، هر قدر
+treat	verb	رفتار کردن، درمان کردن، مهمان کردن	treats,treated,treating
+treat	noun	مهمانی، چیز لذت‌بخش، خوراکی
+roll	verb	غلتیدن، غلتاندن، لوله کردن	rolls,rolled,rolling
+roll	noun	نان رول، طومار، فهرست
+apparently	adverb	ظاهراً، از قرار معلوم
+extra	adjective	اضافی، بیشتر
+extra	noun	سیاهی‌لشکر، هزینهٔ اضافه
+simply	adverb	به سادگی، فقط، صرفاً
+awful	adjective	افتضاح، وحشتناک، بد
+deserve	verb	سزاوار بودن، لیاقت داشتن	deserves,deserved,deserving
+plenty	pronoun	فراوان، کلی، به اندازهٔ کافی
+beg	verb	التماس کردن، گدایی کردن	begs,begged,begging
+whoever	pronoun	هر کس، هر که
+main	adjective	اصلی، عمده
+clearly	adverb	به وضوح، آشکارا
+due	adjective	موعد، سررسید، ناشی از
+folks	noun	مردم، خانواده، دوستان
+fellow	noun	همکار، رفیق، مرد	fellows,fella,fellas
+fellow	adjective	هم، همراه
+grandma	noun	مادربزرگ
+hardly	adverb	به سختی، به ندرت، تقریباً هیچ
+possibly	adverb	احتمالاً، شاید، به هیچ وجه
+somehow	adverb	به نحوی، یک جوری
+super	adjective	عالی، فوق‌العاده
+super	adverb	خیلی، بسیار
+photo	noun	عکس	photos
+sight	noun	دید، بینایی، منظره	sights
+horrible	adjective	وحشتناک، هولناک
+fantastic	adjective	فوق‌العاده، خیالی
+doc	noun	دکتر
+incredible	adjective	باورنکردنی، شگفت‌انگیز
+grandpa	noun	پدربزرگ
+truly	adverb	واقعاً، حقیقتاً
+honestly	adverb	صادقانه، راستش
+survive	verb	زنده ماندن، جان سالم به در بردن	survives,survived,surviving
+belong	verb	تعلق داشتن، متعلق بودن	belongs,belonged,belonging
+sweetie	noun	عزیزم، شیرینم
+perfectly	adverb	کاملاً، به خوبی
+papa	noun	بابا، پدر
+onto	preposition	روی، به روی
+concerned	adjective	نگران، مربوط، ذی‌نفع
+fill	verb	پر کردن، پر شدن	fills,filled,filling
+pretend	verb	وانمود کردن، تظاهر کردن	pretends,pretended,pretending
+usual	adjective	معمول، همیشگی
+surely	adverb	مطمئناً، حتماً
+lab	noun	آزمایشگاه
+afford	verb	استطاعت داشتن، از پس هزینه برآمدن	affords,afforded
+france	noun	فرانسه
+buck	noun	دلار، گوزن نر	bucks
+england	noun	انگلستان
+lately	adverb	اخیراً، به تازگی
+suggest	verb	پیشنهاد کردن، حاکی بودن	suggests,suggested,suggesting
+whenever	conjunction	هر وقت، هر گاه
+settle	verb	حل و فصل کردن، ساکن شدن، آرام کردن	settles,settled,settling
+receive	verb	دریافت کردن، گرفتن	receives,received,receiving
+kinda	adverb	یه جورایی، تقریباً
+babe	noun	عزیزم، بچه
+unit	noun	واحد، یکان	units
+access	noun	دسترسی
+access	verb	دسترسی پیدا کردن
+pal	noun	رفیق، دوست
+nah	interjection	نه
+fbi	noun	اف‌بی‌آی، پلیس فدرال آمریکا
+gosh	interjection	وای، خدای من
+outta	preposition	بیرون از
+sudden	adjective	ناگهانی
+personally	adverb	شخصاً، به شخصه
+exciting	adjective	هیجان‌انگیز
+likely	adjective	محتمل
+likely	adverb	احتمالاً
+yell	verb	فریاد زدن، داد زدن	yells,yelled,yelling
+rush	verb	عجله کردن، شتافتن	rushes,rushed,rushing
+rush	noun	عجله، هجوم
+bike	noun	دوچرخه، موتورسیکلت
+obvious	adjective	آشکار، واضح
+goodness	noun	خوبی، نیکی
+europe	noun	اروپا
+dna	noun	دی‌ان‌ای
+including	preposition	شامل، از جمله
+crash	noun	تصادف، سقوط، صدای مهیب
+crash	verb	تصادف کردن، سقوط کردن، از کار افتادن	crashes,crashed,crashing
+reach	verb	رسیدن، دست دراز کردن	reaches,reached,reaching
+reach	noun	دسترس، برد
+particular	adjective	خاص، ویژه، مشکل‌پسند
+eventually	adverb	سرانجام، در نهایت
+pity	noun	ترحم، دلسوزی، حیف
+data	noun	داده، اطلاعات
+carefully	adverb	با دقت، با احتیاط
+depend	verb	بستگی داشتن، تکیه کردن	depends,depended,depending
+positive	adjective	مثبت، مطمئن
+attorney	noun	وکیل، وکیل مدافع
+grant	verb	اعطا کردن، پذیرفتن	grants,granted,granting
+grant	noun	کمک‌هزینه، اعطا
+badly	adverb	بد، به شدت
+shock	noun	شوک، ضربه، تکان
+shock	verb	شوکه کردن، تکان دادن	shocks,shocked,shocking
+suffer	verb	رنج بردن، متحمل شدن	suffers,suffered,suffering
+wherever	conjunction	هر جا که
+below	preposition	زیرِ، پایین‌تر از
+below	adverb	پایین، در زیر
+india	noun	هند
+aside	adverb	کنار، به یک طرف
+jerk	noun	آدم احمق، تکان ناگهانی
+freak	noun	آدم عجیب، دیوانهٔ چیزی
+freak	verb	وحشت کردن، قاطی کردن	freaks,freaked,freaking
+firm	noun	شرکت، بنگاه
+firm	adjective	محکم، استوار، قاطع
+concern	noun	نگرانی، دغدغه، موضوع	concerns
+concern	verb	نگران کردن، مربوط بودن به
+extremely	adverb	بی‌نهایت، فوق‌العاده
+capable	adjective	توانا، قادر، لایق
+illegal	adjective	غیرقانونی
+unbelievable	adjective	باورنکردنی
+decent	adjective	آبرومند، مناسب، نجیب
+desperate	adjective	ناامید، مستأصل، شدیداً نیازمند
+dramatic	adjective	نمایشی، چشمگیر، دراماتیک
+properly	adverb	درست، به درستی
+mostly	adverb	بیشتر، عمدتاً
+directly	adverb	مستقیماً، بی‌واسطه
+surface	noun	سطح، رویه
+cast	verb	انداختن، قالب‌گیری کردن	casts,casting
+cast	noun	بازیگران، گچ شکسته‌بندی
+germany	noun	آلمان
+punch	noun	مشت، پانچ، شربت میوه
+punch	verb	مشت زدن، سوراخ کردن	punches,punched,punching
+africa	noun	آفریقا
+convince	verb	متقاعد کردن، قانع کردن	convinces,convinced,convincing
+someday	adverb	یک روز، روزی
+presence	noun	حضور، وجود
+internet	noun	اینترنت
+tire	noun	لاستیک، تایر	tires
+tire	verb	خسته شدن، خسته کردن
+cab	noun	تاکسی، اتاقک راننده
+japan	noun	ژاپن
+destiny	noun	سرنوشت، تقدیر
+range	noun	محدوده، دامنه، رشته‌کوه
+unusual	adjective	غیرعادی، نامعمول
+nasty	adjective	زننده، بدجنس، کثیف
+dump	verb	دور ریختن، ول کردن	dumps,dumped,dumping
+dump	noun	زباله‌دانی، جای کثیف
+clue	noun	سرنخ، نشانه
+connect	verb	وصل کردن، ارتباط دادن	connects,connected,connecting
+mexico	noun	مکزیک
+engaged	adjective	نامزد، مشغول، اشغال
+warrant	noun	حکم، مجوز
+elevator	noun	آسانسور
+highness	noun	والاحضرت
+sometime	adverb	یک وقتی، زمانی
+gorgeous	adjective	بسیار زیبا، محشر
+hire	verb	استخدام کردن، کرایه کردن	hires,hired,hiring
+estate	noun	ملک، دارایی، املاک
+gunshot	noun	صدای شلیک، تیر	gunshots
+provide	verb	فراهم کردن، تأمین کردن	provides,provided,providing
+earn	verb	به دست آوردن، درآمد داشتن	earns,earned,earning
+normally	adverb	معمولاً، به طور عادی
+lack	noun	کمبود، فقدان
+lack	verb	نداشتن، کم داشتن	lacks,lacked,lacking
+actual	adjective	واقعی، حقیقی
+mental	adjective	ذهنی، روانی
+highly	adverb	بسیار، به شدت
+federal	adjective	فدرال
+emotional	adjective	احساسی، عاطفی
+entirely	adverb	کاملاً، تماماً
+slip	verb	لیز خوردن، سُر خوردن	slips,slipped,slipping
+slip	noun	لغزش، برگه
+disappointed	adjective	ناامید، دلسرد
+alert	adjective	هوشیار، گوش به زنگ
+alert	noun	هشدار
+violent	adjective	خشن، شدید
+maid	noun	خدمتکار، کلفت
+embarrassing	adjective	خجالت‌آور، شرم‌آور
+waste	verb	هدر دادن، تلف کردن	wastes,wasted,wasting
+heavily	adverb	به شدت، سنگین
+perform	verb	اجرا کردن، انجام دادن	performs,performed,performing
+terrific	adjective	عالی، فوق‌العاده
+advance	noun	پیشرفت، پیش‌پرداخت
+advance	verb	پیشروی کردن، پیش بردن
+quietly	adverb	آرام، بی‌صدا
+deny	verb	انکار کردن، رد کردن	denies,denied,denying
+urgent	adjective	فوری، ضروری
+assure	verb	اطمینان دادن	assures,assured
+shy	adjective	خجالتی، کم‌رو
+closet	noun	کمد، گنجه
+impressed	adjective	تحت تأثیر قرار گرفته
+sensitive	adjective	حساس، نازک‌دل
+hopefully	adverb	امیدوارانه، امیدوارم
+cheat	verb	تقلب کردن، خیانت کردن، فریب دادن	cheats,cheated,cheating
+cheat	noun	متقلب
+suspicious	adjective	مشکوک، بدگمان
+steady	adjective	ثابت، پیوسته، استوار
+particularly	adverb	به ویژه، مخصوصاً
+sandwich	noun	ساندویچ
+express	verb	بیان کردن، ابراز کردن
+express	adjective	سریع، صریح
+miserable	adjective	بدبخت، رنجور، افتضاح
+recall	verb	به یاد آوردن، فراخواندن
+embarrassed	adjective	خجالت‌زده، شرمنده
+terribly	adverb	به شدت، خیلی بد
+italy	noun	ایتالیا
+balance	noun	تعادل، موجودی حساب
+balance	verb	متعادل کردن
+gear	noun	دنده، تجهیزات، وسایل
+blast	noun	انفجار، وزش شدید
+anytime	adverb	هر وقت، هر زمان
+specific	adjective	مشخص، خاص، ویژه
+bust	verb	شکستن، دستگیر کردن	busts,busted
+crush	verb	له کردن، خرد کردن	crushes,crushed,crushing
+crush	noun	علاقهٔ پنهانی، ازدحام
+gross	adjective	چندش‌آور، ناخالص
+classic	adjective	کلاسیک، نمونه
+selfish	adjective	خودخواه
+lifetime	noun	طول عمر، تمام عمر
+throughout	preposition	در سراسرِ، در تمامِ
+homework	noun	تکلیف، مشق
+bible	noun	کتاب مقدس، انجیل
+practically	adverb	عملاً، تقریباً
+cabin	noun	کلبه، کابین
+bond	noun	پیوند، اوراق قرضه، وثیقه
+heck	interjection	لعنتی، وای
+attractive	adjective	جذاب، گیرا
+footsteps	noun	صدای پا، رد پا
+russia	noun	روسیه
+distant	adjective	دور، دوردست، سرد
+surrounded	adjective	محاصره‌شده، احاطه‌شده
+gentle	adjective	ملایم، مهربان، آرام
+frankly	adverb	راستش، رک و راست
+cancel	verb	لغو کردن، باطل کردن	cancels,canceled,cancelled,canceling
+argument	noun	بحث، دعوا، استدلال
+principal	noun	مدیر مدرسه، اصل پول
+principal	adjective	اصلی، عمده
+neighbor	noun	همسایه	neighbors,neighbour,neighbours
+everyday	adjective	روزمره، هر روزی
+underground	adjective	زیرزمینی، مخفی
+identify	verb	شناسایی کردن، تشخیص دادن	identifies,identified,identifying
+underneath	preposition	زیرِ
+reckon	verb	فکر کردن، حساب کردن
+incredibly	adverb	به طرز باورنکردنی، بی‌نهایت
+stake	noun	سهم، چوب نوک‌تیز، خطر
+proceed	verb	ادامه دادن، پیش رفتن
+outfit	noun	لباس، دست لباس
+injured	adjective	زخمی، مجروح
+spain	noun	اسپانیا
+concentrate	verb	تمرکز کردن
+aim	verb	نشانه گرفتن، هدف داشتن
+aim	noun	هدف، قصد
+ease	noun	آسانی، راحتی
+ease	verb	آسان کردن، تسکین دادن
+interrupt	verb	حرف کسی را قطع کردن، مختل کردن	interrupts,interrupted,interrupting
+starving	adjective	گرسنه، از گرسنگی مُردن
+forth	adverb	به جلو، به بعد
+fetch	verb	آوردن، رفتن و آوردن
+tune	noun	آهنگ، نوا
+officially	adverb	رسماً، به طور رسمی
+determined	adjective	مصمم، قاطع
+unhappy	adjective	ناراضی، غمگین
+behalf	noun	از طرفِ، به نمایندگی از
+beside	preposition	کنارِ، پهلوی
+nearby	adjective	نزدیک، مجاور
+nearby	adverb	در همین نزدیکی
+unlike	preposition	برخلافِ، بر عکسِ
+own	verb	مالک بودن، داشتن	owns,owned,owning
+freaking	adjective	لعنتی، خیلی
+downtown	noun	مرکز شهر
+meantime	noun	در این میان، در این فاصله
+exam	noun	امتحان، آزمون
+frame	noun	قاب، چارچوب، کادر
+frame	verb	پاپوش دوختن، قاب گرفتن
+flow	noun	جریان، روند
+flow	verb	جاری شدن
+prevent	verb	جلوگیری کردن، مانع شدن	prevents,prevented,preventing
+strip	noun	نوار، باریکه
+strip	verb	لخت کردن، کندن
+slightly	adverb	کمی، اندکی
+annoying	adjective	آزاردهنده، مزاحم
+judgment	noun	قضاوت، داوری، حکم
+lousy	adjective	افتضاح، مزخرف
+foster	adjective	سرپرستی، رضاعی
+actress	noun	بازیگر زن، هنرپیشه
+punk	noun	لات، پانک
+yay	interjection	هورا
+mistaken	adjective	در اشتباه، نادرست
+policeman	noun	پلیس، پاسبان
+precisely	adverb	دقیقاً
+merely	adverb	فقط، صرفاً
+invent	verb	اختراع کردن، از خود ساختن	invents,invented,inventing
+impact	noun	تأثیر، برخورد
+relief	noun	آسودگی، تسکین، کمک
+footage	noun	فیلم، تصاویر ضبط‌شده
+auntie	noun	خاله، عمه
+complain	verb	شکایت کردن، گله کردن	complains,complained,complaining
+britain	noun	بریتانیا
+farewell	noun	خداحافظی، وداع
+beneath	preposition	زیرِ، پایین‌ترِ
+offense	noun	توهین، جرم، حمله	offence
+snap	verb	بشکن زدن، شکستن، تشر زدن
+technically	adverb	از نظر فنی، به لحاظ قانونی
+extreme	adjective	شدید، افراطی
+cia	noun	سیا
+math	noun	ریاضی
+august	noun	اوت، ماه اوت
+intense	adjective	شدید، پرشور
+invitation	noun	دعوت، دعوت‌نامه
+respond	verb	پاسخ دادن، واکنش نشان دادن
+investigate	verb	تحقیق کردن، بازجویی کردن	investigates,investigated,investigating
+stretch	verb	کش دادن، کشیدن، امتداد یافتن
+unable	adjective	ناتوان، قادر نبودن
+shocked	adjective	شوکه، بهت‌زده
+reverend	noun	کشیش، جناب
+worthy	adjective	شایسته، لایق
+softly	adverb	به آرامی، آهسته
+succeed	verb	موفق شدن، جانشین شدن	succeeds,succeeded
+creepy	adjective	ترسناک، چندش‌آور
+sneak	verb	یواشکی رفتن، دزدکی بردن
+fascinating	adjective	مسحورکننده، جذاب
+romance	noun	عشق، ماجرای عاشقانه
+instance	noun	مورد، نمونه
+exhausted	adjective	خسته، از پا افتاده
+july	noun	ژوئیه
+moron	noun	ابله، احمق
+rubbish	noun	زباله، مزخرف
+alibi	noun	عذر موجه، دلیل غیبت
+safely	adverb	به سلامت، بی‌خطر
+invisible	adjective	نامرئی
+peaceful	adjective	آرام، صلح‌آمیز
+aid	noun	کمک، یاری
+serial	adjective	سریالی، پیاپی
+divine	adjective	الهی، آسمانی
+attached	adjective	وابسته، پیوست
+require	verb	نیاز داشتن، لازم داشتن	requires,required,requiring
+fabulous	adjective	افسانه‌ای، فوق‌العاده
+tap	noun	شیر آب، ضربهٔ آرام
+tap	verb	آرام زدن، شنود کردن
+locker	noun	کمد، قفسه
+constantly	adverb	مدام، پیوسته
+granny	noun	مادربزرگ
+nicely	adverb	به خوبی، با مهربانی
+survival	noun	بقا، زنده ماندن
+review	noun	بررسی، نقد، مرور
+pro	noun	حرفه‌ای
+maintain	verb	حفظ کردن، نگهداری کردن، ادعا کردن
+possession	noun	مالکیت، دارایی، تسخیر
+gimme	verb	بده به من
+profit	noun	سود، منفعت
+enormous	adjective	عظیم، بسیار بزرگ
+happily	adverb	با خوشحالی، خوشبختانه
+assignment	noun	تکلیف، مأموریت
+exposed	adjective	آشکار، در معرض
+canada	noun	کانادا
+appropriate	adjective	مناسب، شایسته
+remarkable	adjective	قابل توجه، برجسته
+awfully	adverb	خیلی، بی‌نهایت
+differently	adverb	به طور متفاوت
+superior	adjective	برتر، عالی‌تر
+superior	noun	مافوق، رئیس
+deadly	adjective	مرگبار، کشنده
+shortly	adverb	به زودی، کمی بعد
+buzz	noun	وزوز، هیجان
+fingerprints	noun	اثر انگشت
+anxious	adjective	نگران، مضطرب، مشتاق
+september	noun	سپتامبر
+ultimate	adjective	نهایی، غایی
+obsessed	adjective	وسواسی، شیفته
+squeeze	verb	فشار دادن، چلاندن
+magical	adjective	جادویی، سحرآمیز
+admire	verb	تحسین کردن، ستودن
+manner	noun	شیوه، طرز، رفتار	manners
+bit	noun	کمی، تکه، ذره	bits
+mount	verb	سوار شدن، بالا رفتن، نصب کردن
+mount	noun	کوه
+fond	adjective	علاقه‌مند، دلبسته
+halfway	adverb	نیمه‌راه، وسط
+fridge	noun	یخچال
+lap	noun	دامن، دور مسابقه
+korea	noun	کره
+unfortunate	adjective	بدشانس، تأسف‌بار
+combat	noun	نبرد، رزم
+flip	verb	برگرداندن، ورق زدن، قاطی کردن
+effective	adjective	مؤثر، کارآمد
+plot	noun	نقشه، توطئه، طرح داستان
+recover	verb	بهبود یافتن، بازیابی کردن	recovers,recovered,recovering
+item	noun	مورد، قلم، چیز	items
+inner	adjective	درونی، داخلی
+affect	verb	تأثیر گذاشتن	affects,affected,affecting
+vast	adjective	وسیع، پهناور
+finest	adjective	بهترین، عالی‌ترین
+achieve	verb	دست یافتن، به دست آوردن
+dope	noun	مواد مخدر، احمق
+medication	noun	دارو
+gravity	noun	جاذبه، گرانش، جدیت
+booze	noun	مشروب الکلی
+terrified	adjective	وحشت‌زده
+web	noun	تار، وب
+prom	noun	جشن فارغ‌التحصیلی دبیرستان
+october	noun	اکتبر
+amongst	preposition	در میانِ، بینِ
+temper	noun	خلق، عصبانیت، طبع
+operate	verb	کار کردن، عمل جراحی کردن، اداره کردن	operates,operated,operating
+undercover	adjective	مخفی، مأمور مخفی
+smash	verb	خرد کردن، شکستن
+tragic	adjective	غم‌انگیز، فاجعه‌بار
+sober	adjective	هوشیار، غیرمست، متین
+delicate	adjective	ظریف، شکننده، حساس
+weakness	noun	ضعف، نقطه‌ضعف
+australia	noun	استرالیا
+cellphone	noun	تلفن همراه، موبایل
+bunny	noun	خرگوش، خرگوش کوچک
+gunfire	noun	تیراندازی، صدای شلیک
+backwards	adverb	به عقب، وارونه
+petty	adjective	جزئی، پیش‌پاافتاده، کوته‌فکر
+wagon	noun	واگن، گاری
+audition	noun	تست بازیگری، آزمون اجرا
+burst	verb	ترکیدن، منفجر شدن
+interfere	verb	دخالت کردن، مداخله کردن
+register	verb	ثبت‌نام کردن، ثبت کردن	registers,registered,registering
+unfair	adjective	ناعادلانه، بی‌انصافانه
+absurd	adjective	مضحک، پوچ، بی‌معنی
+inspired	adjective	الهام‌گرفته، الهام‌بخش
+ranch	noun	مزرعهٔ دامداری
+thanksgiving	noun	روز شکرگزاری
+guardian	noun	سرپرست، نگهبان، قیم
+misunderstanding	noun	سوءتفاهم
+halt	verb	متوقف کردن، ایست کردن
+closely	adverb	از نزدیک، با دقت
+november	noun	نوامبر
+fairly	adverb	نسبتاً، منصفانه
+specifically	adverb	به طور خاص، مشخصاً
+spoil	verb	خراب کردن، لوس کردن
+explode	verb	منفجر شدن
+combination	noun	ترکیب، رمز
+dismiss	verb	مرخص کردن، رد کردن، اخراج کردن	dismisses,dismissed
+halloween	noun	هالووین
+groom	noun	داماد
+oops	interjection	اوه، ببخشید
+alike	adjective	شبیه، همانند
+burger	noun	همبرگر
+wreck	noun	لاشه، خرابه، ویرانی
+physically	adverb	از نظر جسمی
+unexpected	adjective	غیرمنتظره
+stink	verb	بوی بد دادن	stinks
+instant	adjective	فوری، آنی
+rehearsal	noun	تمرین نمایش
+scan	verb	اسکن کردن، از نظر گذراندن
+overnight	adverb	یک‌شبه، در طول شب
+counsel	noun	مشاور، وکیل
+impress	verb	تحت تأثیر قرار دادن
+bump	noun	برآمدگی، ضربه
+supreme	adjective	عالی، برترین
+excitement	noun	هیجان
+broad	adjective	پهن، وسیع، کلی
+vietnam	noun	ویتنام
+mob	noun	جمعیت، اوباش، مافیا
+gig	noun	اجرا، کار موقت
+include	verb	شامل شدن، در بر داشتن	includes,included
+infected	adjective	عفونی، آلوده
+relieved	adjective	آسوده‌خاطر، راحت
+solo	adjective	تک‌نفره، انفرادی
+determine	verb	تعیین کردن، مشخص کردن
+elsewhere	adverb	جای دیگر
+adorable	adjective	دوست‌داشتنی، ناز
+personnel	noun	کارکنان، پرسنل
+located	adjective	واقع، قرار گرفته
+rely	verb	تکیه کردن، اعتماد کردن
+toss	verb	پرتاب کردن، انداختن
+anonymous	adjective	ناشناس، بی‌نام
+december	noun	دسامبر
+egypt	noun	مصر
+commitment	noun	تعهد، پایبندی
+react	verb	واکنش نشان دادن
+misery	noun	بدبختی، رنج
+communicate	verb	ارتباط برقرار کردن
+cemetery	noun	قبرستان، گورستان
+rear	noun	عقب، پشت
+luckily	adverb	خوشبختانه
+attracted	adjective	جذب‌شده
+keen	adjective	مشتاق، تیز
+significant	adjective	مهم، قابل توجه
+visual	adjective	دیداری، بصری
+display	noun	نمایش، صفحه‌نمایش
+penalty	noun	جریمه، مجازات، پنالتی
+bargain	noun	معامله، جنس ارزان
+fuss	noun	سروصدا، الم‌شنگه
+assign	verb	واگذار کردن، تعیین کردن	assigns,assigned
+psycho	noun	روانی، دیوانه
+dedicated	adjective	متعهد، فداکار، اختصاصی
+dining	noun	غذاخوری
+corporate	adjective	شرکتی، سازمانی
+folk	noun	مردم، عامه
+folk	adjective	محلی، عامیانه
+cruise	noun	سفر دریایی، کروز
+trailer	noun	تریلر، پیش‌نمایش فیلم، یدک
+dull	adjective	کسل‌کننده، کند، کدر
+teenage	adjective	نوجوان، نوجوانی
+cooperate	verb	همکاری کردن
+worthless	adjective	بی‌ارزش
+kindness	noun	مهربانی، لطف
+january	noun	ژانویه
+april	noun	آوریل
+june	noun	ژوئن
+spike	noun	میخ، افزایش ناگهانی
+israel	noun	اسرائیل
+iraq	noun	عراق
+kindly	adverb	با مهربانی، لطفاً
+martial	adjective	رزمی، نظامی
+upside	noun	جنبهٔ مثبت، رو
+faint	verb	غش کردن، بیهوش شدن
+faint	adjective	کم‌رنگ، ضعیف
+recovery	noun	بهبود، بازیابی
+tech	noun	فناوری
+perspective	noun	دیدگاه، چشم‌انداز
+neat	adjective	مرتب، تمیز، عالی
+psychic	noun	غیب‌گو، فالگیر
+accidentally	adverb	تصادفاً، ناخواسته
+pacific	noun	اقیانوس آرام
+risky	adjective	پرخطر، ریسکی
+glorious	adjective	باشکوه، افتخارآمیز
+blank	adjective	خالی، سفید
+slight	adjective	جزئی، اندک
+genuine	adjective	واقعی، اصل، صادق
+electrical	adjective	برقی، الکتریکی
+therapist	noun	درمانگر، روان‌درمانگر
+compete	verb	رقابت کردن
+compliment	noun	تعریف، تمجید
+publish	verb	منتشر کردن، چاپ کردن	publishes,published
+helpless	adjective	درمانده، بی‌پناه
+strictly	adverb	به شدت، صرفاً، اکیداً
+scotland	noun	اسکاتلند
+satan	noun	شیطان
+monsieur	noun	موسیو، آقا
+thee	pronoun	تو را
+thy	determiner	تو، ـَت
+eve	noun	شب پیش از عید
+gee	interjection	وای، ای بابا
+pa	noun	بابا
+missing	adjective	گمشده، ناپیدا، غایب
+interested	adjective	علاقه‌مند
+charming	adjective	دلربا، جذاب
+delighted	adjective	خوشحال، مسرور
+limited	adjective	محدود
+odds	noun	احتمال، شانس
+ad	noun	آگهی، تبلیغ
+tend	verb	تمایل داشتن، مراقبت کردن	tends,tended,tending
+fired	adjective	اخراج‌شده
+leading	adjective	پیشرو، برجسته
+damaged	adjective	آسیب‌دیده
+dressed	adjective	لباس‌پوشیده
+loaded	adjective	پر، مسلح، پولدار
+woke	adjective	بیدار، آگاه
+convinced	adjective	متقاعد، مطمئن
+cheering	noun	تشویق، هورا
+kidding	verb	شوخی کردن
+picked	=pick
+picking	=pick
+checked	=check
+checking	=check
+dropped	=drop
+dropping	=drop
+planning	=plan
+planned	=plan
+murdered	=murder
+covered	=cover
+covering	=cover
+ruined	=ruin
+offered	=offer
+offering	=offer
+cleared	=clear
+clears	=clear
+dealing	=deal
+screwed	=screw
+screwing	=screw
+joking	=joke
+trapped	=trap
+whispering	=whisper
+crossed	=cross
+crossing	=cross
+trained	=train
+reported	=report
+reporting	=report
+charged	=charge
+placed	=place
+packed	=pack
+packing	=pack
+testing	=test
+tested	=test
+landed	=land
+worrying	=worry
+facing	=face
+faced	=face
+shared	=share
+sharing	=share
+painted	=paint
+tracking	=track
+transferred	=transfer
+clicking	=click
+stepped	=step
+racing	=race
+handed	=hand
+suspected	=suspect
+focused	=focus
+sealed	=seal
+poisoned	=poison
+buddies	=buddy
+posted	=post
+marked	=mark
+corrected	=correct
+fooled	=fool
+fooling	=fool
+dated	=date
+filming	=film
+honored	=honor
+boarding	=board
+filed	=file
+judging	=judge
+practicing	=practice
+screaming	=scream
+missed	=miss
+figured	=figure
+cheered	=cheer
+firing	=fire
+fired	=fire
+beeping	=beep
+screeching	=screech
+rumbling	=rumble
+pops	=pop
+dressing	=dress
+led	=lead
+granted	=grant
+treated	=treat
+treating	=treat
+earned	=earn
+settled	=settle
+suggested	=suggest
+suggesting	=suggest
+admitted	=admit
+recovered	=recover
+complaining	=complain
+deserved	=deserve
+belonged	=belong
+identified	=identify
+denied	=deny
+crashed	=crash
+crashing	=crash
+crushed	=crush
+realised	=realize
+spotted	=spot
+operating	=operate
+messing	=mess
+messed	=mess
+cheated	=cheat
+cheating	=cheat
+slipped	=slip
+begging	=beg
+pretending	=pretend
+wasted	=waste
+wasting	=waste
+dumped	=dump
+busted	=bust
+survived	=survive
+suffered	=suffer
+investigating	=investigate
+bothered	=bother
+bothering	=bother
+bang	verb	کوبیدن، محکم زدن	bangs,banged,banging
+bang	noun	صدای بلند، بنگ
+pick	verb	برداشتن، انتخاب کردن، چیدن
+check	verb	بررسی کردن، چک کردن، وارسی کردن
+drop	verb	انداختن، افتادن، کاهش یافتن
+plan	verb	برنامه‌ریزی کردن، قصد داشتن
+murder	verb	به قتل رساندن، کشتن
+cover	verb	پوشاندن، تحت پوشش قرار دادن، گزارش کردن
+ruin	verb	خراب کردن، نابود کردن
+offer	verb	پیشنهاد دادن، تقدیم کردن
+clear	verb	پاک کردن، خالی کردن، تبرئه کردن
+deal	verb	معامله کردن، کنار آمدن، پخش کردن
+screw	verb	پیچ کردن، خراب کردن
+joke	verb	شوخی کردن
+trap	verb	به دام انداختن، گیر انداختن
+whisper	verb	پچ‌پچ کردن، نجوا کردن
+cross	verb	عبور کردن، رد شدن، خط زدن
+train	verb	آموزش دادن، تمرین کردن
+report	verb	گزارش دادن، اطلاع دادن
+charge	verb	شارژ کردن، متهم کردن، هزینه گرفتن
+place	verb	قرار دادن، گذاشتن
+pack	verb	بستن بار، بسته‌بندی کردن
+test	verb	آزمایش کردن، امتحان کردن
+land	verb	فرود آمدن، به زمین نشستن
+worry	verb	نگران بودن، نگران کردن
+face	verb	روبه‌رو شدن، رو به چیزی بودن
+share	verb	شریک شدن، به اشتراک گذاشتن، تقسیم کردن
+paint	verb	رنگ کردن، نقاشی کردن
+track	verb	ردیابی کردن، دنبال کردن
+transfer	verb	انتقال دادن، منتقل شدن
+click	verb	کلیک کردن، تق صدا دادن
+step	verb	قدم گذاشتن، پا گذاشتن
+race	verb	مسابقه دادن، با سرعت رفتن
+hand	verb	دادن، به دست کسی دادن
+suspect	verb	مشکوک بودن، گمان کردن
+focus	verb	تمرکز کردن، متمرکز کردن
+seal	verb	مهر و موم کردن، بستن
+poison	verb	مسموم کردن
+buddy	noun	رفیق، دوست
+post	verb	پست کردن، منتشر کردن، گماشتن
+mark	verb	علامت زدن، نمره دادن، مشخص کردن
+correct	verb	اصلاح کردن، تصحیح کردن
+fool	verb	گول زدن، فریب دادن
+date	verb	قرار گذاشتن با کسی، تاریخ زدن
+film	verb	فیلم گرفتن، فیلم‌برداری کردن
+honor	verb	احترام گذاشتن، گرامی داشتن
+board	verb	سوار شدن
+file	verb	بایگانی کردن، ثبت کردن، سوهان زدن
+judge	verb	قضاوت کردن، داوری کردن
+practice	verb	تمرین کردن، به کار بستن
+scream	verb	جیغ زدن، فریاد کشیدن
+miss	verb	دلتنگ شدن، از دست دادن، خطا رفتن
+figure	verb	فهمیدن، حدس زدن، به حساب آوردن
+cheer	verb	تشویق کردن، دلگرم کردن
+fire	verb	شلیک کردن، اخراج کردن
+beep	verb	بوق زدن، بیپ کردن
+screech	verb	جیغ کشیدن، جیرجیر کردن
+rumble	verb	غرش کردن، غرغر کردن
+pop	verb	ترکیدن، سر زدن، یکهو آمدن
+dress	verb	لباس پوشیدن، لباس پوشاندن
+lead	verb	هدایت کردن، رهبری کردن، منجر شدن

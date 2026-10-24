@@ -14,6 +14,11 @@ export const LEXICON_FILE = new URL("../lexicon/en-fa.jsonl.gz", import.meta.url
 // English words that appear at least 50 times in the FrequencyWords subtitle
 // corpus, so the word families leave out rare words.
 export const COMMON_WORDS_FILE = new URL("../lexicon/common-words.txt.gz", import.meta.url);
+// Persian meanings written with Claude for common words Wiktionary leaves out,
+// one sense per line: word, word type, Persian meanings separated by "،", and
+// optionally other forms separated by ",". A line "picked	=pick" only adds a
+// form to a word that's already in the lexicon.
+export const EXTRA_FILE = new URL("../lexicon/claude-fa.tsv", import.meta.url);
 
 const POS = {
   noun: "noun", verb: "verb", adj: "adjective", adv: "adverb", pron: "pronoun",
@@ -229,13 +234,58 @@ export function readLines(stream, gzipped) {
   return createInterface({ input: gzipped ? stream.pipe(createGunzip()) : stream, crlfDelay: Infinity });
 }
 
+// Reads the extra meanings file into { records, forms }: whole records by word,
+// and forms to add to words of the main lexicon. Lines starting with # are comments.
+export function parseExtra(text) {
+  const records = new Map();
+  const forms = [];
+  for (const line of text.split("\n")) {
+    if (!line.trim() || line.startsWith("#")) continue;
+    const [word, pos = "", persian = "", other = ""] = line.split("\t").map((x) => x.trim());
+    if (pos.startsWith("=")) {
+      forms.push([word, pos.slice(1)]);
+      continue;
+    }
+    const meanings = persian.split("،").map((x) => x.trim()).filter(Boolean);
+    if (!word || !pos || !meanings.length) continue;
+    const key = word.toLowerCase();
+    const rec = records.get(key) ?? { word, phonetic: "", audio: "", forms: [], senses: [] };
+    rec.forms = [...new Set([...rec.forms, ...other.split(",").map((x) => x.trim()).filter(Boolean)])];
+    rec.senses.push({ partOfSpeech: pos, persian: meanings, definition: "", example: "" });
+    records.set(key, rec);
+  }
+  return { records, forms };
+}
+
+// Adds the extra meanings: new words as they are, and for words the lexicon
+// already has, their forms and only the word types it doesn't cover yet.
+export function mergeExtra(records, { records: extra, forms }) {
+  const byWord = new Map(records.map((r) => [r.word.toLowerCase(), r]));
+  for (const [key, rec] of extra) {
+    const prev = byWord.get(key);
+    if (!prev) {
+      records.push(rec);
+      byWord.set(key, rec);
+      continue;
+    }
+    prev.forms = [...new Set([...prev.forms, ...rec.forms])];
+    const types = new Set(prev.senses.map((s) => s.partOfSpeech));
+    prev.senses.push(...rec.senses.filter((s) => !types.has(s.partOfSpeech)));
+  }
+  for (const [form, word] of forms) {
+    const rec = byWord.get(word.toLowerCase());
+    if (rec && !rec.forms.includes(form)) rec.forms.push(form);
+  }
+  return records;
+}
+
 // Fills the lexicon table from the bundled file on first run, and again only
 // when the file has changed.
-export async function loadLexicon(db, file = LEXICON_FILE, commonFile = COMMON_WORDS_FILE) {
+export async function loadLexicon(db, file = LEXICON_FILE, commonFile = COMMON_WORDS_FILE, extraFile = EXTRA_FILE) {
   if (!existsSync(file)) return db.lexiconSize();
   const hash = (f) => (existsSync(f) ? createHash("sha256").update(readFileSync(f)).digest("hex") : "");
   // Includes the cleanup version, so a file built before a cleanup change is cleaned on load.
-  const version = `${hash(file)}:${hash(commonFile)}:${CLEANUP_VERSION}`;
+  const version = `${hash(file)}:${hash(commonFile)}:${hash(extraFile)}:${CLEANUP_VERSION}`;
   if (db.lexiconVersion() === version) return db.lexiconSize();
 
   const records = [];
@@ -244,8 +294,10 @@ export async function loadLexicon(db, file = LEXICON_FILE, commonFile = COMMON_W
     if (!line.trim()) continue;
     const record = JSON.parse(line);
     if (record.base) families.push(record);
-    else records.push({ ...record, senses: cleanSenses(record.senses) });
+    else records.push(record);
   }
+  if (existsSync(extraFile)) mergeExtra(records, parseExtra(readFileSync(extraFile, "utf8")));
+  for (const r of records) r.senses = cleanSenses(r.senses);
 
   // Leaves rare words out of the families, also for files built before the
   // build did this itself.
