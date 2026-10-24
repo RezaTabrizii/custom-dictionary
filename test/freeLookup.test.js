@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { openDb } from "../src/db.js";
-import { addPersian, createFreeLookup, englishSources, withRecording } from "../src/freeLookup.js";
+import { addPersian, createFreeLookup, englishSources, withOfflineDictionary, withRecording } from "../src/freeLookup.js";
 import { LookupError } from "../src/lookup.js";
 
 // Offline lexicon records, as built from kaikki.org data.
@@ -118,4 +118,24 @@ test("offline Persian that matches no definition goes to senses still without Pe
   // The second sense matches "دویدن"; the first gets the first unused verb meaning.
   // Nouns have no offline Persian, so they stay empty.
   assert.deepEqual(addPersian(senses, offline).map((s) => s.persian), [["اداره کردن"], ["دویدن"], []]);
+});
+
+test("words of the complete dictionary are answered offline; others go to the lookup", async () => {
+  const db = openDb();
+  const complete = {
+    word: "go", phonetic: "/ɡoʊ/", audio: "", forms: ["went"], complete: true, senses: [
+      { partOfSpeech: "verb", persian: ["رفتن"], definition: "To move from one place to another.", example: "We go to school by bus." },
+    ],
+  };
+  db.importLexicon([...OFFLINE, complete], "test");
+  const asked = [];
+  const lookup = withOfflineDictionary(async (word) => {
+    asked.push(word);
+    return { word, phonetic: "", audio: "", senses: [] };
+  }, { db });
+
+  assert.deepEqual(await lookup("went"), { word: "go", phonetic: "/ɡoʊ/", audio: "", senses: complete.senses });
+  await lookup("run"); // in the Wiktionary data only
+  await lookup("zebra");
+  assert.deepEqual(asked, ["run", "zebra"]);
 });
