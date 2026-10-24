@@ -54,8 +54,10 @@ const storage = {
 };
 storage.remove("password"); // the shared password of earlier versions
 
-// Groups the user has opened since the page loaded; every other group starts closed.
+// Groups the user has opened since the page loaded or the search was last
+// cleared; every other group is closed.
 const expanded = new Set();
+let lastQuery = "";
 storage.remove("collapsed"); // the closed groups earlier versions remembered
 
 // Calls the API with the session cookie. A request that finds the session
@@ -130,6 +132,8 @@ function groupHtml(g, inner, count, forceOpen) {
 
 function renderList() {
   const q = query();
+  if (lastQuery && !q) expanded.clear(); // clearing the search closes every group
+  lastQuery = q;
   const selected = selectedId();
   const groupsIn = Map.groupBy(groups, (g) => g.parentId);
   const wordsIn = Map.groupBy(words, (w) => w.groupId);
