@@ -54,9 +54,9 @@ const storage = {
 };
 storage.remove("password"); // the shared password of earlier versions
 
-// Groups the user has closed, remembered on this device.
-const collapsed = new Set(JSON.parse(storage.get("collapsed") || "[]"));
-const saveCollapsed = () => storage.set("collapsed", JSON.stringify([...collapsed]));
+// Groups the user has opened since the page loaded; every other group starts closed.
+const expanded = new Set();
+storage.remove("collapsed"); // the closed groups earlier versions remembered
 
 // Calls the API with the session cookie. A request that finds the session
 // gone shows the sign-in screen.
@@ -107,7 +107,7 @@ function wordHtml(w, selected) {
 const firstPersian = (w) => w.senses.find((s) => s.persian.length)?.persian[0] ?? "";
 
 function groupHtml(g, inner, count, forceOpen) {
-  const open = forceOpen || !collapsed.has(g.id);
+  const open = forceOpen || expanded.has(g.id);
   const head = renaming?.id === g.id
     ? `<form class="group-rename" data-id="${g.id}" autocomplete="off">
         ${icon("folder")}
@@ -376,12 +376,7 @@ async function addRelatives(entry, names, include = []) {
       els.status.append(" ", btn);
     }
 
-    if (result.groupId) {
-      collapsed.delete(result.groupId);
-      saveCollapsed();
-      renderList();
-      showLanded({ kind: "group", id: result.groupId });
-    }
+    if (result.groupId) showLanded({ kind: "group", id: result.groupId });
   } catch (err) {
     relatives = [];
     renderList();
@@ -560,8 +555,7 @@ function setOpen(li, open) {
   li.classList.toggle("collapsed", !open);
   li.querySelector(":scope > .group-head .group-toggle")?.setAttribute("aria-expanded", String(open));
   li.querySelector(":scope > .group-body").inert = !open;
-  open ? collapsed.delete(id) : collapsed.add(id);
-  saveCollapsed();
+  open ? expanded.add(id) : expanded.delete(id);
 }
 
 async function saveGroupName(form) {
@@ -768,7 +762,6 @@ makeDraggable(els.list, {
         items: [item, { kind: "word", id: t.word.id }],
       });
       if (!tree) return;
-      collapsed.delete(tree.created);
       startRename(tree.created, true);
       els.list.querySelector(`li[data-kind="group"][data-id="${tree.created}"]`)?.classList.add("landed");
       return;
