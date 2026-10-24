@@ -117,3 +117,51 @@ test("the bundled extra meanings use known word types and forms of real words", 
   assert.ok(records.size > 500);
   assert.ok(forms.every(([form, word]) => form && word));
 });
+
+test("the extra file corrects the lexicon: removals, replaced word types and appended meanings", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "vazhe-"));
+  const file = join(dir, "en-fa.jsonl.gz");
+  const extra = join(dir, "extra.tsv");
+  writeFileSync(file, gzipSync((await build()).map((r) => JSON.stringify(r)).join("\n")));
+  writeFileSync(extra, [
+    "*\t-\tگرداندن",
+    "run\t-\tدویدن",
+    "run\t+verb\tدو کردن",
+    "bright\t!adjective\tروشن، تابناک",
+    "bright\t!adjective\tباهوش",
+  ].join("\n"));
+
+  const db = openDb();
+  await loadLexicon(db, file, NO_COMMON, extra);
+  const run = db.findInLexicon("run").senses.map((s) => s.persian);
+  assert.ok(!run.flat().includes("دویدن") && !run.flat().includes("گرداندن"));
+  assert.ok(run.flat().includes("اداره کردن"));
+  assert.deepEqual(run.at(-1), ["دو کردن"]);
+  assert.deepEqual(db.findInLexicon("bright").senses.map((s) => s.persian), [["روشن", "تابناک"], ["باهوش"]]);
+});
+
+test("saved words get the same corrections once, and keep what the person wrote", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "vazhe-"));
+  const file = join(dir, "en-fa.jsonl.gz");
+  const extra = join(dir, "extra.tsv");
+  writeFileSync(file, gzipSync((await build()).map((r) => JSON.stringify(r)).join("\n")));
+  writeFileSync(extra, "run\t-\tدویدن\nbright\t!adjective\tروشن، تابناک\n");
+
+  const db = openDb();
+  const words = db.forUser(db.createUser("reza", "not-a-real-hash"));
+  const sense = (partOfSpeech, persian) => ({ partOfSpeech, persian, definition: "", example: "" });
+  words.addWord({ word: "run", phonetic: "", senses: [sense("verb", ["دویدن", "تاختن"]), sense("noun", ["دو"])] });
+  words.addWord({ word: "bright", phonetic: "", senses: [sense("adjective", ["درخشان"]), sense("adjective", ["زرنگ"])] });
+  await loadLexicon(db, file, NO_COMMON, extra);
+
+  const saved = new Map(words.listWords().map((w) => [w.word, w.senses.map((s) => s.persian)]));
+  assert.deepEqual(saved.get("run"), [["تاختن"], ["دو"]]);
+  // The replaced meaning makes way for the correction; the person's own one stays.
+  assert.deepEqual(saved.get("bright"), [["روشن", "تابناک"], ["زرنگ"]]);
+
+  // Once per version of the file: a meaning the person adds back stays.
+  words.addWord({ word: "walk", phonetic: "", senses: [sense("verb", ["دویدن"])] });
+  writeFileSync(file, gzipSync((await build()).map((r) => JSON.stringify(r)).join("\n") + "\n"));
+  await loadLexicon(db, file, NO_COMMON, extra);
+  assert.deepEqual(words.listWords().find((w) => w.word === "walk").senses[0].persian, ["دویدن"]);
+});

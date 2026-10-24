@@ -90,9 +90,13 @@ const icon = (name) => `<svg class="icon" aria-hidden="true"><use href="icons.sv
 
 const posList = (w) => [...new Set(w.senses.map((s) => POS_SHORT[s.partOfSpeech]).filter(Boolean))].join(" ");
 
+// Half-spaces are ignored, so "میکنم" finds "می‌کنم".
+const noHalfSpace = (s) => s.replace(/\u200c/g, "");
+
 function matches(w, q) {
   if (!q) return true;
-  return w.word.toLowerCase().includes(q) || w.senses.some((s) => s.persian.some((p) => p.includes(q)));
+  const fa = noHalfSpace(q);
+  return w.word.toLowerCase().includes(q) || w.senses.some((s) => s.persian.some((p) => noHalfSpace(p).includes(fa)));
 }
 
 const query = () => els.input.value.trim().toLowerCase();

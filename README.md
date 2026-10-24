@@ -34,7 +34,8 @@ scripts/users.js         manages accounts from the command line
 scripts/check-sources.js checks each online dictionary with a real request
 lexicon/en-fa.jsonl.gz   the offline data file, once you've built it
 lexicon/common-words.txt.gz  common English words, used when building the word families
-lexicon/claude-fa.tsv    extra Persian meanings written with Claude Code, for common words Wiktionary leaves out
+lexicon/claude-fa.tsv    Persian meanings written with Claude Code: words Wiktionary leaves out, and corrections
+lexicon/halfspace.tsv    half-spaces (نیم‌فاصله) the Wiktionary data lost, put back on load
 ```
 
 When you add a word, the server looks it up and stores the answer in SQLite. Words you already have are never looked up twice. Speech input uses the browser's built-in speech recognition, which works in Chrome and Edge on desktop and Android. The mic button is hidden in browsers without it, such as Firefox.
@@ -57,16 +58,26 @@ Each English meaning gets the Persian of the offline meaning with the same word 
 
 A word found online but missing from the offline dictionary is saved with English only, and its page says no Persian meaning was found.
 
-#### Adding Persian meanings with Claude Code
+#### Better Persian meanings, written with Claude Code
 
-Wiktionary has no Persian for many everyday words ("keep", "afraid", "probably"), so `lexicon/claude-fa.tsv` fills them in. Its meanings were written with Claude Code, which a Claude Pro or Max plan includes, so they cost nothing per lookup and need no API key. To add more, open Claude Code in this project and ask, for example: *"add Persian meanings to lexicon/claude-fa.tsv for these words: …"*, then redeploy. Words that showed "no Persian meaning was found" are good candidates.
+The Wiktionary data has gaps and mistakes, so two files improve it. Claude Code wrote both, and a Claude Pro or Max plan includes Claude Code, so they cost nothing per lookup and need no API key:
 
-Each line is one meaning: the word, its word type, its Persian meanings separated by `،`, and optionally its other forms separated by `,`. A line `picked	=pick` only adds a form to a word that's already in the offline dictionary. For a word the offline dictionary already has, only word types it doesn't cover yet are added. The file is loaded together with the offline dictionary on start, and again whenever it changes.
+- **`lexicon/claude-fa.tsv`** adds Persian for everyday words Wiktionary has none for ("keep", "afraid", "probably"). It also corrects the meanings of the ~1,500 most common words: it removes Afghan, archaic and made-up words (پیسه، ایدر، حدسیدن), and fixes meanings attached to the wrong sense.
+- **`lexicon/halfspace.tsv`** puts back the half-spaces the Wiktionary data lost ("خواهش میکنم" → "خواهش می‌کنم", "رئیسجمهور" → "رئیس‌جمهور").
+
+Both are applied to the offline dictionary, and once to the words you've already saved when the app starts after a change. A correction takes out only the exact meanings it names, so meanings you typed yourself stay. Search ignores half-spaces, so "میکنم" still finds "می‌کنم".
+
+To fix or add more, open Claude Code in this project and ask, for example: *"the Persian for 'charge' is wrong, fix it in lexicon/claude-fa.tsv"* or *"add Persian meanings for these words: …"*, then redeploy. Words whose page said "no Persian meaning was found" are good candidates.
+
+Each line of `claude-fa.tsv` is tab-separated. The second column says what the line does:
 
 ```
-keep	verb	نگه داشتن، ادامه دادن، حفظ کردن	keeps,keeping,kept
-keep	noun	خرجی، برج اصلی قلعه
-picked	=pick
+keep	verb	نگه داشتن، حفظ کردن	keeps,kept   a meaning, used when the word has none of that word type
+bad	!adjective	بد، ناجور                replaces the word's meanings of that word type
+meet	+verb	ملاقات کردن                     adds a meaning next to the ones the word has
+here	-	ایدر                                  removes these meanings from the word
+*	-	پیسه، موتر                            removes them from every word
+picked	=pick                                "picked" finds "pick"
 ```
 
 To check that every online dictionary works (and your Merriam-Webster key), run:

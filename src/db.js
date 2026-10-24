@@ -278,6 +278,29 @@ export function openDb(file = ":memory:") {
         throw err;
       }
     },
+    // Runs fix(word, senses) on every saved word once per `version`; a fix that
+    // returns new senses replaces the saved ones.
+    fixSavedWords(version, fix) {
+      if (q.metaGet.get("saved_fixes")?.value === version) return 0;
+      const update = db.prepare("UPDATE words SET senses = ? WHERE id = ?");
+      let n = 0;
+      db.exec("BEGIN");
+      try {
+        for (const row of db.prepare("SELECT id, word, senses FROM words").all()) {
+          const fixed = fix(row.word, JSON.parse(row.senses));
+          if (fixed) {
+            update.run(JSON.stringify(fixed), row.id);
+            n++;
+          }
+        }
+        q.metaSet.run("saved_fixes", version);
+        db.exec("COMMIT");
+      } catch (err) {
+        db.exec("ROLLBACK");
+        throw err;
+      }
+      return n;
+    },
     findInLexicon(word) {
       const row = q.lexiconGet.get(word);
       return row && { word: row.word, phonetic: row.phonetic, audio: row.audio, senses: JSON.parse(row.senses) };

@@ -2,7 +2,7 @@
 # Wiktionary lexicon (en-fa.jsonl.gz) has no Persian for. Loaded with it on start.
 # word	word type	Persian meanings separated by ،	other forms separated by , (optional)
 # word	=base	adds "word" as a form of a word already in the lexicon
-of	preposition	از، مال، ـِ
+of	preposition	از، مالِ
 out	adverb	بیرون، خارج
 out	adjective	بیرون، خاموش، تمام‌شده
 out	preposition	بیرون از، از
@@ -826,3 +826,498 @@ rumble	verb	غرش کردن، غرغر کردن
 pop	verb	ترکیدن، سر زدن، یکهو آمدن
 dress	verb	لباس پوشیدن، لباس پوشاندن
 lead	verb	هدایت کردن، رهبری کردن، منجر شدن
+
+# ---------- Corrections to the Wiktionary meanings ----------
+# Dialect (Dari/Tajik), archaic or coined words, digits and notes left in the
+# Persian, removed from every word.
+*	-	پیسه، موتر، تیلفون کردن، تیلفون زدن، دورواژیدن، دورگویال، تیار، اشتک، اشتکک، حدسیدن، گمانیدن، استفادن، زنگیدن، رتبیدن، رتبش، گروهیستن، آغازیدن، خواردن، زنده گی کردن، باینجا، جخت، خاکزاد، دونستن، بیاوار، خهل، تولبره، هاچه، ژفک، زرمان، سوتام، پادرزم، خجک، پیواژ، تسو، اسفید، ریدک، بهبودن، بهبودی، درگیرانیدن، افروزانیدن، کرامند، وایسوندن، گاس، اشکلک، عقربک، وید، دقه، جرمانه، را for definite direct object، ١، ۲، ۳، ۴، ۰، ۲۰، ۱۳، ضعیفه، درینک، درخواستن، زنگی
+you	!pronoun	شما، تو
+you	!pronoun	شما را، تو را
+i	-	مو
+the	!determiner	این، آن، همان
+a	determiner	یک، یه
+an	-	-ی
+to	-	زی، دن، تن
+in	-	اندر
+on	-	اندر
+he	-	اوی
+she	-	اوی
+with	-	ابا
+here	-	ایدر
+just	!adjective	عادل، منصف، درست
+just	!adverb	فقط، تنها
+just	!adverb	همین الان، تازه
+just	!adverb	درست، دقیقاً
+just	!adverb	به زحمت، به سختی
+like	-	از ... خوش... آمدن
+one	-	ه، ی، یک ...ی
+now	-	نون
+know	-	دونستن
+look	-	سیل کردن
+say	-	باز خواندن، برخواندن، نمایاندن، نمودن
+two	-	اثنان
+three	-	سو
+four	-	چار
+night	-	شو
+better	!verb	بهتر کردن، بهبود بخشیدن
+better	adjective	بهتر
+better	adverb	بهتر
+name	-	نامور، نامزدن، شناختن
+big	-	مه، کته
+nice	!adjective	خوب، دلپذیر، قشنگ
+nice	!adjective	مهربان، خوش‌برخورد
+fine	adjective	خوب، عالی
+fine	+adjective	ریز، نازک
+fine	adverb	خوب، به خوبی
+being	-	بوش
+dad	-	باب
+mother	-	آبه
+bad	!adjective	بد، ناجور
+bad	!adjective	خراب، فاسد
+bad	!adjective	شدید، سخت
+bad	!adjective	مضر، زیان‌آور
+another	-	افزون
+next	!adjective	بعدی، آینده
+next	!adjective	کناری، مجاور
+next	adverb	بعد، سپس
+morning	-	بام
+boy	-	پس
+already	-	اینک
+shit	-	ککه، ان
+ready	!adjective	آماده، حاضر
+door	-	باب، دروازه
+brother	-	لالا، اخ
+yet	!adverb	هنوز، تاکنون
+yet	!adverb	با این حال، اما
+yet	!adverb	حتی، باز هم
+yet	conjunction	ولی، اما، با این حال
+guess	verb	حدس زدن، گمان کردن
+tomorrow	-	صباح، سوا
+phone	!noun	تلفن، گوشی
+phone	verb	تلفن زدن، زنگ زدن
+play	-	پیس
+hand	-	دس
+water	-	او
+blood	-	خین، دم
+stuff	!noun	چیز، وسایل، خرت و پرت
+kid	-	هیرک
+point	-	کته
+mine	-	مرا
+dear	-	فری
+husband	-	شو، شی
+husband	!verb	با صرفه‌جویی خرج کردن
+light	-	شید، رخش
+stand	-	ایست
+child	-	بچ، کر
+able	!adjective	توانا، قادر
+wow	!interjection	وای، به‌به، عجب
+line	-	کش
+order	!verb	دستور دادن، فرمان دادن
+order	!verb	سفارش دادن
+lord	!noun	ارباب، سرور، فرمانروا
+lord	+noun	خداوند
+white	-	آق
+sort	!noun	نوع، جور، قسم
+sort	!noun	مرتب‌سازی
+sort	!verb	مرتب کردن، دسته‌بندی کردن
+hello	-	هلو
+small	-	که
+little	-	که
+meet	+verb	ملاقات کردن، آشنا شدن، به هم رسیدن
+check	+noun	بررسی، وارسی
+check	+noun	چک بانکی
+check	+noun	صورت‌حساب
+well	adjective	خوب، سالم، تندرست
+still	!adverb	هنوز
+still	!adverb	با این حال، باز هم
+still	!adverb	بی‌حرکت، آرام
+even	!adverb	حتی
+even	!adverb	حتی بیشتر، باز هم
+by	+preposition	با، توسطِ، به وسیلهٔ
+by	+preposition	کنارِ، نزدیکِ
+by	+preposition	از کنارِ
+by	adverb	از کنار، گذرا
+as	+preposition	مانند، مثلِ
+as	conjunction	همان‌طور که، چون، وقتی که
+as	+adverb	به همان اندازه، همان‌قدر
+up	-	ابر، برز
+up	preposition	بالای، به سمت بالای
+up	adjective	بیدار، بالا، تمام‌شده
+over	preposition	روی، بالای، بیش از، در طولِ
+over	adverb	تمام، آن طرف، دوباره
+over	adjective	تمام‌شده
+so	adverb	خیلی، بسیار، این‌قدر
+so	+adverb	همچنین، هم
+so	+adverb	این‌طور، چنین
+so	+conjunction	تا، برای اینکه
+back	-	عقب به
+back	!adverb	به عقب، عقب
+back	!adverb	برگشت، دوباره، پس
+back	verb	پشتیبانی کردن، حمایت کردن
+get	+verb	رسیدن، رفتن
+get	+verb	شدن
+get	+verb	فهمیدن
+get	+verb	آوردن، گرفتن
+then	adjective	آن زمان، سابق
+right	+adverb	درست، دقیقاً، فوراً
+uncle	-	افدر، خالو
+poor	-	کم داشتن
+touch	-	پرماسیدن
+ass	-	کس
+control	!verb	کنترل کردن، مهار کردن، اداره کردن
+drive	-	روندن
+bitch	-	لاج
+air	-	وای، وایو
+hospital	-	شفاخانه
+evening	-	ایوار
+sense	-	چم
+sense	+noun	معنی، مفهوم
+sense	+noun	احساس، درک، شعور
+sense	verb	حس کردن، احساس کردن
+million	-	هزارهزار
+voice	-	دنگ
+felt	+verb	احساس کرد، حس کرد
+coffee	-	کافه
+secret	-	سکرت
+date	-	خرمارطب، روزماه، روزمه
+fall	-	فتادن
+fall	+noun	پاییز
+fall	+noun	سقوط، افت
+fault	-	عوار
+drop	-	ژیگ
+throw	-	افگندن
+wonder	!verb	تعجب کردن، کنجکاو بودن، از خود پرسیدن
+eye	-	عین
+eye	!verb	زیر نظر گرفتن، نگاه کردن
+figure	-	دیسه
+figure	+noun	رقم، عدد
+figure	+noun	هیکل، اندام
+figure	+noun	چهره، شخصیت
+state	-	کشکر
+report	-	راپرت
+chief	-	سریاک
+wedding	-	بیوگانی
+marriage	-	بیوگانی
+ship	+verb	ارسال کردن، فرستادن
+dark	-	تم
+information	-	استحضار
+certainly	!adverb	قطعاً، حتماً، مطمئناً
+film	-	توژ
+film	+noun	لایه، پوسته
+hotel	-	هوتل
+near	-	نزد
+except	!verb	مستثنا کردن
+except	+preposition	به جز، مگر، به استثنای
+except	conjunction	جز اینکه، مگر اینکه
+rock	-	برد
+rock	+noun	سنگ، صخره
+handle	!verb	از عهده برآمدن، رسیدگی کردن، کنترل کردن
+buddy	-	رفیق
+protect	!verb	محافظت کردن، حفاظت کردن، نگه داشتن
+spend	!verb	خرج کردن، صرف کردن، گذراندن
+army	-	گند، عسکر
+fair	+adjective	منصفانه، عادلانه، منصف
+fair	+adjective	نسبتاً خوب، متوسط
+sun	-	خورشیدفش
+letter	-	وات
+attention	-	انتباه
+space	-	اسپاش
+group	!verb	دسته‌بندی کردن، گروه‌بندی کردن
+single	-	یکدونه
+normal	+adjective	عادی، معمولی، طبیعی
+present	-	نمایاندن
+present	+verb	هدیه دادن، معرفی کردن
+present	+noun	هدیه، کادو
+horse	-	اسپ
+charge	+noun	هزینه، بها
+charge	+noun	اتهام
+charge	+noun	مسئولیت، سرپرستی
+surprise	-	شگفتزده، غافلگیر
+surprise	!verb	غافلگیر کردن، متعجب کردن
+key	-	کیلید
+key	adjective	کلیدی، اصلی، مهم
+quickly	-	جلدی
+fish	!verb	ماهی گرفتن، ماهیگیری کردن
+accident	-	عرض
+cover	-	رو پوشانی
+deep	-	چوقور
+sea	-	زو، زراه
+smart	+adjective	باهوش، زرنگ
+smart	+adjective	شیک، آراسته
+public	-	عوامی
+proud	-	شاداب، مایهی افتخار
+proud	+adjective	مغرور، متکبر
+forward	adverb	به جلو، جلو
+rich	-	رایومند
+blow	+verb	فوت کردن
+ice	-	هسر، هسیر، جلید
+sad	-	دژم
+cell	+noun	تلفن همراه، موبایل
+camera	-	کامرا
+fly	-	دوبالان
+third	-	سیک، سهیک
+third	+noun	یک‌سوم
+window	-	کلکین
+private	adjective	خصوصی، شخصی، محرمانه
+wall	-	والاد، بارو
+art	-	صنعت
+teach	!verb	یاد دادن، درس دادن، آموزش دادن
+evil	-	فژ، فژه
+holy	-	اسپنتا، سپنتا
+store	-	ستنج
+store	+noun	فروشگاه، مغازه
+store	verb	ذخیره کردن، انبار کردن
+cat	-	پشک
+village	-	قشلاق
+south	-	نیمروز
+island	-	گنگ
+plane	-	دلب
+north	-	اپاختر
+tree	-	دار
+beer	-	بوزه، بخسم، بگنی
+thousand	-	زار
+partner	-	هنباز
+victim	-	ضحیه
+computer	-	کمپیوتر
+planet	-	اباختر، هرباسپ، اختر
+bus	+noun	اتوبوس
+aunt	-	دایزه، کاکی
+fat	-	وز
+summer	-	هامین، توسون
+moon	-	مانگ، لوخن
+address	!verb	خطاب کردن، سخنرانی کردن
+address	!verb	رسیدگی کردن، پرداختن به
+foot	-	فیت
+type	-	جوره
+heaven	-	گرزمان
+action	-	ژیرش
+otherwise	-	دگرسان
+fit	-	فیت، سزیدن
+fit	adjective	سالم، روی فرم، مناسب
+fit	verb	اندازه بودن، جا شدن، مناسب بودن
+smoke	-	سگرت کشیدن
+west	-	خوربران، خوروران
+hero	-	قهرمان، یل، بهادر، گرد
+hero	noun	قهرمان، دلاور
+stage	!verb	به صحنه بردن، اجرا کردن، ترتیب دادن
+chicken	-	ماک
+track	-	شوسه
+track	+noun	مسیر، ریل، قطعهٔ موسیقی
+leg	-	پوژه
+complete	-	سپری
+mention	!verb	اشاره کردن، نام بردن، ذکر کردن
+burn	!noun	سوختگی
+cost	!verb	هزینه داشتن، قیمت داشتن، تمام شدن
+ray	-	برازه
+reading	-	خوانی
+nose	-	نس
+raise	-	بالیدن
+raise	+verb	بالا بردن، افزایش دادن، مطرح کردن
+raise	noun	افزایش حقوق
+neck	-	مل، گری
+warm	-	تافتن، فردمایدن
+bottle	-	بوتل
+bird	-	جیگر
+medical	+adjective	پزشکی
+stone	-	برد، سنگین
+huge	+adjective	بزرگ، عظیم، غول‌پیکر
+consider	!verb	در نظر گرفتن، فکر کردن، به حساب آوردن
+lay	+verb	گذاشتن، قرار دادن، خواباندن
+skin	-	شخودن
+responsible	-	ذمهدار
+bottom	-	مفعول، پسیو
+cook	-	پزنده، پخته
+knife	-	پچق
+blind	-	مکفوفالبصر
+cup	-	پنگان
+hanging	!noun	اعدام، به دار آویختن
+speed	-	زودی
+speed	!verb	سرعت گرفتن، با سرعت رفتن
+beyond	+preposition	آن سوی، فراتر از، بیرون از
+milk	-	دوختن
+copy	!verb	کپی کردن، رونویسی کردن
+copy	-	پچین
+dancing	-	وشتن
+cake	-	کوکه
+color	-	گون
+project	+verb	نمایش دادن، تاباندن
+e	-	ئی
+fake	-	ماخ
+oil	-	تیل، تیل خاک
+remain	-	پایداشتن
+credit	-	کردیت
+research	!verb	تحقیق کردن، پژوهش کردن
+view	-	ویو
+view	+noun	نظر، دیدگاه
+chair	-	چوکی
+strike	+verb	ضربه زدن، به ذهن رسیدن
+nowhere	-	تورقوزآباد
+sheriff	-	شریف
+jealous	!adjective	حسود، حسادت‌آمیز
+society	-	هازمان
+shirt	-	کرته
+pray	-	نیایش
+prepare	-	تیار کردن، آمودن، آمادن
+soldier	-	سالدات
+wash	-	خودشویی
+program	-	پروگرام
+base	!verb	مبتنی کردن، پایه گذاشتن، مستقر بودن
+lift	-	لفت
+lift	verb	بلند کردن، برداشتن
+command	-	تکاوری
+command	verb	فرمان دادن، دستور دادن
+create	-	بوجود آوردن
+create	+verb	به وجود آوردن
+brilliant	-	لیان
+brilliant	+adjective	فوق‌العاده، عالی، باهوش
+mister	-	آغا، مهتر، بزرگ
+exist	-	هستادن
+joy	-	کروز
+split	-	بشکلیدن، چاکیدن، چاکزدن، قسمیدن
+split	+verb	تقسیم کردن، نصف کردن، جدا شدن
+finger	-	انگشد
+flat	-	هامون
+flat	+noun	آپارتمان
+soft	-	ساویز
+spare	verb	دریغ کردن، بخشیدن، صرفه‌جویی کردن
+loose	-	درباختن، واگذاشتن
+lake	-	دریاژه، دریااک
+damage	-	آک
+damage	verb	آسیب زدن، خراب کردن
+ed	-	ویر.
+manage	-	دبریدن، کیاستن
+manage	+verb	از عهده برآمدن، موفق شدن
+fancy	adjective	شیک، مجلل، فاخر
+chest	-	بر
+stomach	-	کم
+funeral	-	جنازه
+funeral	+noun	مراسم تشییع، خاکسپاری
+football	-	فوتبال پایگوی
+football	+noun	فوتبال
+spread	+verb	پخش کردن، گسترش یافتن، مالیدن
+spring	-	خانی، عین
+gentleman	-	لودی
+interview	-	اینترویو
+fan	-	پکه دستی، پکه
+pig	-	خوگ
+brave	-	نیو
+garden	-	موی زهار
+alarm	+noun	زنگ ساعت، زنگ خطر، هشدار
+issue	+noun	موضوع، مسئله، مشکل
+issue	verb	صادر کردن، منتشر کردن
+total	adjective	کل، کامل
+block	verb	مسدود کردن، بستن، جلوگیری کردن
+pool	+noun	استخر
+hearing	+noun	جلسهٔ دادرسی
+account	+noun	حساب کاربری
+account	+noun	شرح، گزارش
+spoke	+verb	گفت، صحبت کرد
+rule	verb	حکومت کردن، حکم دادن
+note	verb	توجه کردن، یادداشت کردن
+rose	+verb	بلند شد، طلوع کرد
+nurse	-	نرس
+nurse	verb	پرستاری کردن، شیر دادن
+target	!verb	هدف گرفتن، نشانه رفتن
+bro	-	حاجی
+regret	-	افسوسیدن
+lesson	-	آموزانیدن
+bread	-	چرک، چورک
+dating	-	کیجیدن
+secretary	-	سکرتر
+smith	!noun	آهنگر، فلزکار
+toilet	-	تشناب، بدرفت
+priest	-	کندا
+avoid	!verb	اجتناب کردن، دوری کردن، پرهیز کردن
+proper	!adjective	مناسب، درست، شایسته
+horn	-	برغو
+rise	-	برخیزیدن، افزودن
+rise	+verb	بالا رفتن، افزایش یافتن، طلوع کردن
+temple	-	ناوس، فرخار
+chase	!verb	تعقیب کردن، دنبال کردن
+confused	!adjective	گیج، سردرگم
+television	-	دورنمار
+appear	-	نمایادن، آشکارادن
+appear	+verb	به نظر رسیدن
+trap	-	نژنک
+soup	-	شورباه
+source	-	بنخان
+healthy	-	درواخ
+dawn	!verb	سپیده زدن، روشن شدن
+dawn	-	پرگاس
+effect	-	هنایش
+modern	-	زمانوی
+hook	-	آکج
+swim	-	شناویدن، شناییدن
+bone	-	است
+candy	-	کانفت
+fail	-	تصورکردن
+bride	-	بیو، دغد
+flower	-	اسپرغم
+wise	-	زنیر
+tear	-	ارس، دراندن
+therefore	!adverb	بنابراین، از این رو، پس
+separate	!verb	جدا کردن، جدا شدن
+separate	adjective	جدا، جداگانه
+pilot	-	طیارهچی
+sale	-	فروخت
+armed	-	زیناوند، افزارمند
+grade	-	صنف
+row	-	رژ
+direct	-	رایانیدن
+junior	+adjective	کوچک‌تر، زیردست
+exchange	+noun	تبادل، معاوضه
+exchange	verb	عوض کردن، مبادله کردن
+former	adjective	سابق، پیشین
+lower	+verb	پایین آوردن، کاهش دادن
+lower	adjective	پایین‌تر
+odd	+adjective	عجیب، غریب
+literally	+adverb	واقعاً، به معنای واقعی کلمه
+# Coined one-word verbs that Persian speakers don't use.
+*	-	استفادن، انبوییدن، فتادن، شگفتیدن، گروهیدن، گروهادن، سزیدن، اشاریدن، فردمایدن، سگالیدن، پوییدن، آمادن، نوفیدن، هستادن، بشکلیدن، چاکیدن، قسمیدن، دبریدن، افسوسیدن، آموزانیدن، کیجیدن، پرهیزیدن، یوزیدن، یوختن، نمایادن، آشکارادن، شناویدن، شناییدن، دراندن، جدایدن، رایانیدن، جمعیدن، جمعادن، طرازیدن، شپلیدن، چخیدن، وصفیدن، بیانیدن، وجهیدن، علنیدن، خلاندن، بنچیدن، هاژیدن، توصیدن، نهیدن، پنامیدن، نپاهیدن، پاسیدن، ویجیدن، چیرادن، مخیدن، رمبیدن، پاسخانیدن، دورادن، دوریدن، اندخسیدن، کهیدن، سرفیدن، سکیزیدن، پخسیدن، تاویدن، رقبیدن، قانعیدن، وخشیدن، جداییدن، سواییدن، اجرایدن، تنجیدن، شرکتادن، لاییدن، ارجاعیدن، ترجمیدن، ترادیسیدن، دورنگاریدن، حذفیدن، درستجیدن، دگریدن، دگرجنسیدن، افژولیدن، سرهمیدن، شلیدن، رزیدن، نصبیدن، دروندادن، آغازاندن، آژیدن، نهازیدن، یادانیدن، تباهیدن، کیاستن، پاییدن، سپنج کردن
+try	-	پژوهیدن
+collect	!verb	جمع کردن، جمع‌آوری کردن، گردآوری کردن
+design	!verb	طراحی کردن
+describe	!verb	توصیف کردن، شرح دادن
+attend	verb	شرکت کردن، حضور یافتن، رسیدگی کردن
+announce	!verb	اعلام کردن، اعلان کردن
+document	verb	مستند کردن، ثبت کردن
+stare	!verb	خیره شدن، زل زدن
+advise	!verb	توصیه کردن، نصیحت کردن، مشورت دادن
+forbid	!verb	ممنوع کردن، قدغن کردن
+observe	!verb	مشاهده کردن، رعایت کردن
+fry	verb	سرخ کردن
+overcome	verb	غلبه کردن، چیره شدن
+collapse	!verb	فرو ریختن، از هوش رفتن
+reply	!verb	پاسخ دادن، جواب دادن
+orbit	verb	به دور چیزی چرخیدن
+cough	!verb	سرفه کردن
+leap	!verb	جهیدن، پریدن
+melt	!verb	ذوب شدن، آب شدن
+tolerate	!verb	تحمل کردن، تاب آوردن
+persuade	!verb	متقاعد کردن، قانع کردن
+divide	!verb	تقسیم کردن، جدا کردن
+execute	!verb	اجرا کردن، اعدام کردن
+strain	!verb	صاف کردن، فشار آوردن
+participate	!verb	شرکت کردن، مشارکت کردن
+bark	!verb	پارس کردن
+refer	verb	ارجاع دادن، اشاره کردن
+translate	!verb	ترجمه کردن
+transform	verb	دگرگون کردن، تبدیل کردن
+fax	!verb	فکس کردن
+delete	verb	پاک کردن، حذف کردن
+verify	!verb	تأیید کردن، درستی چیزی را بررسی کردن
+transition	verb	گذار کردن، تغییر کردن
+provoke	verb	تحریک کردن، برانگیختن
+assemble	!verb	سوار کردن، جمع کردن، گرد هم آمدن
+limp	verb	لنگیدن، لنگ زدن
+dye	!verb	رنگ کردن
+install	verb	نصب کردن
+input	!verb	وارد کردن
+initiate	verb	آغاز کردن، راه انداختن
+penetrate	!verb	نفوذ کردن، رخنه کردن
+awe	verb	به حیرت انداختن
+memorize	!verb	حفظ کردن، به خاطر سپردن
+decay	+verb	پوسیدن، فاسد شدن
+wax	!verb	واکس زدن، موم زدن
+# Afghan Persian (Dari) words, for an Iranian Persian dictionary.
+*	-	پوهنتون، سرک، بایسکل، پطلون، چوکی، کلکین، تشناب، هوتل، بوتل، کمپیوتر، شفاخانه، ولسوالی، لیلیه، کامرا، تیل، تیل خاک

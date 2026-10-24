@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { createReadStream, existsSync, readFileSync } from "node:fs";
 import { createInterface } from "node:readline";
-import { cleanPersian, cleanSenses, CLEANUP_VERSION } from "./persian.js";
+import { cleanPersian, cleanPersianWord, cleanSenses, CLEANUP_VERSION } from "./persian.js";
 import { createGunzip } from "node:zlib";
 
 // Converts kaikki.org (Wiktionary) English entries into the compact offline
@@ -14,10 +14,8 @@ export const LEXICON_FILE = new URL("../lexicon/en-fa.jsonl.gz", import.meta.url
 // English words that appear at least 50 times in the FrequencyWords subtitle
 // corpus, so the word families leave out rare words.
 export const COMMON_WORDS_FILE = new URL("../lexicon/common-words.txt.gz", import.meta.url);
-// Persian meanings written with Claude for common words Wiktionary leaves out,
-// one sense per line: word, word type, Persian meanings separated by "،", and
-// optionally other forms separated by ",". A line "picked	=pick" only adds a
-// form to a word that's already in the lexicon.
+// Persian meanings written with Claude: words Wiktionary leaves out, and
+// corrections to its meanings. See parseExtra for the format.
 export const EXTRA_FILE = new URL("../lexicon/claude-fa.tsv", import.meta.url);
 
 const POS = {
@@ -234,49 +232,112 @@ export function readLines(stream, gzipped) {
   return createInterface({ input: gzipped ? stream.pipe(createGunzip()) : stream, crlfDelay: Infinity });
 }
 
-// Reads the extra meanings file into { records, forms }: whole records by word,
-// and forms to add to words of the main lexicon. Lines starting with # are comments.
+// Reads the extra meanings file. Lines starting with # are comments; the others
+// are tab-separated, and the second column says what the line does:
+//   keep	verb	نگه داشتن، حفظ کردن	keeps,kept   a meaning, added when the lexicon has
+//                                          no meaning of that word type yet
+//   bad	!adjective	بد، ناجور                replaces the lexicon's meanings of that word type
+//   meet	+verb	ملاقات کردن                     adds a meaning even when the word type has some
+//   here	-	ایدر، باینجا                         removes these Persian meanings from the word
+//   *	-	پیسه، موتر                            removes them from every word
+//   picked	=pick                                adds a form to a word
 export function parseExtra(text) {
   const records = new Map();
   const forms = [];
+  const removals = new Map(); // word (or "*") -> Persian meanings to remove
   for (const line of text.split("\n")) {
     if (!line.trim() || line.startsWith("#")) continue;
-    const [word, pos = "", persian = "", other = ""] = line.split("\t").map((x) => x.trim());
-    if (pos.startsWith("=")) {
-      forms.push([word, pos.slice(1)]);
+    const [word, op = "", persian = "", other = ""] = line.split("\t").map((x) => x.trim());
+    if (op.startsWith("=")) {
+      forms.push([word, op.slice(1)]);
       continue;
     }
     const meanings = persian.split("،").map((x) => x.trim()).filter(Boolean);
-    if (!word || !pos || !meanings.length) continue;
-    const key = word.toLowerCase();
+    if (!word || !op || !meanings.length) continue;
+    const key = word === "*" ? "*" : word.toLowerCase();
+    if (op === "-") {
+      removals.set(key, new Set([...(removals.get(key) ?? []), ...meanings]));
+      continue;
+    }
+    const mode = { "!": "replace", "+": "append" }[op[0]] ?? "add";
+    const partOfSpeech = mode === "add" ? op : op.slice(1);
     const rec = records.get(key) ?? { word, phonetic: "", audio: "", forms: [], senses: [] };
     rec.forms = [...new Set([...rec.forms, ...other.split(",").map((x) => x.trim()).filter(Boolean)])];
-    rec.senses.push({ partOfSpeech: pos, persian: meanings, definition: "", example: "" });
+    rec.senses.push({ partOfSpeech, persian: meanings, definition: "", example: "", mode });
     records.set(key, rec);
   }
-  return { records, forms };
+  return { records, forms, removals };
 }
 
-// Adds the extra meanings: new words as they are, and for words the lexicon
-// already has, their forms and only the word types it doesn't cover yet.
-export function mergeExtra(records, { records: extra, forms }) {
+const withoutMode = ({ mode, ...s }) => s;
+
+// Applies the extra file to the lexicon records (in place): removals first, then
+// replaced word types, added meanings and forms. Returns a function that applies
+// the same corrections to a saved word's senses, or returns null when it has none.
+export function applyExtra(records, { records: extra, forms, removals }) {
+  // Compared after cleanup, so a meaning matches however its half-spaces were written.
+  const global = removals.get("*") ?? [];
+  const removed = (key) => new Set([...global, ...(removals.get(key) ?? [])].map(cleanPersianWord));
+  const has = (set, p) => set?.has(cleanPersianWord(p));
   const byWord = new Map(records.map((r) => [r.word.toLowerCase(), r]));
+  // The meanings a replaced word type had, so saved words can lose them too.
+  const replacedTerms = new Map();
+
+  for (const r of records) {
+    const key = r.word.toLowerCase();
+    const drop = removed(key);
+    if (drop.size) r.senses = r.senses.map((s) => ({ ...s, persian: s.persian.filter((p) => !has(drop, p)) }));
+    const replaced = new Set(extra.get(key)?.senses.filter((s) => s.mode === "replace").map((s) => s.partOfSpeech));
+    for (const s of r.senses.filter((x) => replaced.has(x.partOfSpeech))) {
+      const terms = replacedTerms.get(key) ?? new Map();
+      terms.set(s.partOfSpeech, new Set([...(terms.get(s.partOfSpeech) ?? []), ...s.persian.map(cleanPersianWord)]));
+      replacedTerms.set(key, terms);
+    }
+    r.senses = r.senses.filter((s) => s.persian.length && !replaced.has(s.partOfSpeech));
+  }
+
   for (const [key, rec] of extra) {
     const prev = byWord.get(key);
     if (!prev) {
-      records.push(rec);
-      byWord.set(key, rec);
+      const added = { ...rec, senses: rec.senses.map(withoutMode) };
+      records.push(added);
+      byWord.set(key, added);
       continue;
     }
     prev.forms = [...new Set([...prev.forms, ...rec.forms])];
     const types = new Set(prev.senses.map((s) => s.partOfSpeech));
-    prev.senses.push(...rec.senses.filter((s) => !types.has(s.partOfSpeech)));
+    prev.senses.push(...rec.senses.filter((s) => s.mode !== "add" || !types.has(s.partOfSpeech)).map(withoutMode));
   }
   for (const [form, word] of forms) {
     const rec = byWord.get(word.toLowerCase());
     if (rec && !rec.forms.includes(form)) rec.forms.push(form);
   }
-  return records;
+  // Words left without any meaning are dropped.
+  for (let i = records.length - 1; i >= 0; i--) if (!records[i].senses.length) records.splice(i, 1);
+
+  return function fixSaved(word, senses) {
+    const key = word.toLowerCase();
+    const replaced = replacedTerms.get(key) ?? new Map();
+    const drop = removed(key);
+    if (!drop.size && !replaced.size) return null;
+    const ours = extra.get(key)?.senses ?? [];
+    const used = new Map(); // word type -> how many of our meanings were given out
+    let changed = false;
+    const fixed = senses.map((s) => {
+      const old = replaced.get(s.partOfSpeech);
+      const keep = s.persian.filter((p) => !has(drop, p) && !has(old, p));
+      if (keep.length === s.persian.length) return s;
+      changed = true;
+      if (keep.length) return { ...s, persian: keep };
+      // A meaning left empty gets the next corrected meaning of its word type.
+      const candidates = ours.filter((o) => o.partOfSpeech === s.partOfSpeech);
+      if (!candidates.length) return { ...s, persian: [] };
+      const n = used.get(s.partOfSpeech) ?? 0;
+      used.set(s.partOfSpeech, n + 1);
+      return { ...s, persian: [...candidates[Math.min(n, candidates.length - 1)].persian] };
+    });
+    return changed ? fixed : null;
+  };
 }
 
 // Fills the lexicon table from the bundled file on first run, and again only
@@ -296,7 +357,7 @@ export async function loadLexicon(db, file = LEXICON_FILE, commonFile = COMMON_W
     if (record.base) families.push(record);
     else records.push(record);
   }
-  if (existsSync(extraFile)) mergeExtra(records, parseExtra(readFileSync(extraFile, "utf8")));
+  const fixSaved = existsSync(extraFile) ? applyExtra(records, parseExtra(readFileSync(extraFile, "utf8"))) : null;
   for (const r of records) r.senses = cleanSenses(r.senses);
 
   // Leaves rare words out of the families, also for files built before the
@@ -307,5 +368,10 @@ export async function loadLexicon(db, file = LEXICON_FILE, commonFile = COMMON_W
     for (const f of families) f.derived = usable.has(f.base) ? f.derived.filter((w) => usable.has(w)) : [];
   }
   db.importLexicon(records, version, families);
+  // Saved words get the same corrections, once per version of the extra file.
+  if (fixSaved) db.fixSavedWords(hash(extraFile), (word, senses) => {
+    const fixed = fixSaved(word, senses);
+    return fixed && cleanSenses(fixed);
+  });
   return records.length;
 }
