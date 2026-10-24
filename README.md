@@ -34,6 +34,7 @@ scripts/users.js         manages accounts from the command line
 scripts/check-sources.js checks each online dictionary with a real request
 lexicon/en-fa.jsonl.gz   the offline data file, once you've built it
 lexicon/common-words.txt.gz  common English words, used when building the word families
+lexicon/dictionary/*.tsv the complete offline dictionary written with Claude Code: the most common words, every meaning
 lexicon/claude-fa.tsv    Persian meanings written with Claude Code: words Wiktionary leaves out, and corrections
 lexicon/halfspace.tsv    half-spaces (نیم‌فاصله) the Wiktionary data lost, put back on load
 ```
@@ -41,6 +42,10 @@ lexicon/halfspace.tsv    half-spaces (نیم‌فاصله) the Wiktionary data l
 When you add a word, the server looks it up and stores the answer in SQLite. Words you already have are never looked up twice. Speech input uses the browser's built-in speech recognition, which works in Chrome and Edge on desktop and Android. The mic button is hidden in browsers without it, such as Firefox.
 
 ### Where meanings come from
+
+**The complete offline dictionary comes first.** `lexicon/dictionary/` holds about 3,000 of the most common English words: the words people meet most often in conversation, plus the core vocabulary of everyday and academic English. Each word has every common meaning, for every word type it has (noun, verb, adjective, adverb, preposition and so on), and each meaning has its Persian equivalents, a short English definition and an English example sentence, and each word has its pronunciation. A word that's in it, or one of its forms ("went" finds "go", "children" finds "child"), is answered straight from it. No online dictionary is asked, so it works offline, it's instant, and with a Claude API key it costs nothing. The recording for the speaker button comes from the Wiktionary data when it has one; otherwise the device's voice is used.
+
+Words that aren't in the complete dictionary are looked up as before:
 
 **With a Claude API key** (`ANTHROPIC_API_KEY` set), Claude provides everything: word types, Persian meanings, definitions and examples. It costs about $0.01 per new word and corrects spelling and speech mistakes. The pronunciation recording comes from the offline dictionary or the Free Dictionary API.
 
@@ -79,6 +84,20 @@ here	-	ایدر                                  removes these meanings from the
 *	-	پیسه، موتر                            removes them from every word
 picked	=pick                                "picked" finds "pick"
 ```
+
+#### The complete dictionary's files
+
+Claude Code wrote the complete dictionary, in numbered files that are read in order. Each word starts with an `@` line giving its pronunciation and, for irregular words, its other forms. Then comes one line per meaning: the word type, the Persian meanings separated by `،`, a definition and an example. All columns are tab-separated:
+
+```
+go	@	/ɡoʊ/	goes,went,gone,going
+go	verb	رفتن	To move or travel from one place to another.	We go to school by bus.
+go	noun	نوبت	A turn to do something.	It's your go.
+```
+
+Regular forms (cars, stopped, trying, bigger) are added by themselves. A verb whose `@` line lists its forms gets no regular past form, so list all its irregular ones (`see	@	/siː/	saw,seen,seeing`). A word in this dictionary replaces its Wiktionary meanings completely. The words you've already saved keep what they have; delete one and add it again to get the new meanings.
+
+To add words, open Claude Code in this project and ask, for example: *"add these words to the complete dictionary in lexicon/dictionary, with all their meanings: …"*. `npm test` checks every file: each word has a pronunciation, each meaning has Persian, a definition and an example, and no word is written twice.
 
 To check that every online dictionary works (and your Merriam-Webster key), run:
 
@@ -244,6 +263,6 @@ Vazhe then opens full screen like any other app. If you later want it in the Pla
 
 English definitions without a key: [Merriam-Webster's Learner's Dictionary](https://learnersdictionary.com), the [Free Dictionary API](https://dictionaryapi.dev) and [Wiktionary](https://en.wiktionary.org).
 
-Offline dictionary data: [Wiktionary](https://en.wiktionary.org) via [kaikki.org](https://kaikki.org), under CC BY-SA 4.0 and GFDL. Common-word list: words seen at least 50 times in [FrequencyWords](https://github.com/hermitdave/FrequencyWords) (MIT), built from OpenSubtitles.
+Complete offline dictionary (`lexicon/dictionary/`): written with Claude Code for this project. Offline dictionary data: [Wiktionary](https://en.wiktionary.org) via [kaikki.org](https://kaikki.org), under CC BY-SA 4.0 and GFDL. Common-word list: words seen at least 50 times in [FrequencyWords](https://github.com/hermitdave/FrequencyWords) (MIT), built from OpenSubtitles.
 
 Fonts: [Geist](https://vercel.com/font) and [Vazirmatn](https://github.com/rastikerdar/vazirmatn), both under the SIL Open Font License. Icons: [Phosphor](https://phosphoricons.com) (MIT).
