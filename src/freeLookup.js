@@ -93,3 +93,14 @@ export function withRecording(lookup, { db, sources = englishSources() }) {
     return { ...entry, audio };
   };
 }
+
+// Words of the complete offline dictionary are answered from it, with no online
+// lookup and no cost; other words go to `lookup`.
+export function withOfflineDictionary(lookup, { db }) {
+  return async function lookupOfflineFirst(input) {
+    const offline = db.findInLexicon(input);
+    if (!offline?.complete) return lookup(input);
+    const { word, phonetic, audio, senses } = offline;
+    return { word, phonetic, audio, senses };
+  };
+}

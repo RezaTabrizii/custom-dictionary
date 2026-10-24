@@ -3,7 +3,7 @@ import { networkInterfaces } from "node:os";
 import { join } from "node:path";
 import { createApp } from "./app.js";
 import { openDb } from "./db.js";
-import { createFreeLookup, englishSources, withRecording } from "./freeLookup.js";
+import { createFreeLookup, englishSources, withOfflineDictionary, withRecording } from "./freeLookup.js";
 import { loadLexicon } from "./lexicon.js";
 import { createLookup } from "./lookup.js";
 
@@ -16,15 +16,16 @@ console.log(lexiconSize
   ? `Offline dictionary: ${lexiconSize} words.`
   : "Offline dictionary is empty: run `npm run build:lexicon` to create lexicon/en-fa.jsonl.gz.");
 
-// Claude when an API key is set; otherwise online dictionaries for English plus
-// the offline dictionary for Persian.
+// Words of the complete offline dictionary are answered from it. Other words go
+// to Claude when an API key is set; otherwise to online dictionaries for English
+// plus the offline dictionary for Persian.
 const sources = englishSources({ merriamWebsterKey: process.env.MERRIAM_WEBSTER_KEY ?? "" });
-const lookup = process.env.ANTHROPIC_API_KEY
+const lookup = withOfflineDictionary(process.env.ANTHROPIC_API_KEY
   ? withRecording(createLookup(), { db, sources })
-  : createFreeLookup({ db, sources });
+  : createFreeLookup({ db, sources }), { db });
 console.log(process.env.ANTHROPIC_API_KEY
-  ? "Word lookups use Claude."
-  : `Word lookups use ${sources.map((s) => s.name).join(", then ")} for English, and the offline dictionary for Persian.`);
+  ? "Words not in the complete offline dictionary are looked up with Claude."
+  : `Words not in the complete offline dictionary use ${sources.map((s) => s.name).join(", then ")} for English, and the offline dictionary for Persian.`);
 
 // TRUST_PROXY: set when an https proxy sits in front (most hosts), e.g. "1".
 const trust = process.env.TRUST_PROXY ?? "";

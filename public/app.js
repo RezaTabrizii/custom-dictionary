@@ -33,7 +33,7 @@ const els = {
 const POS_SHORT = {
   noun: "n.", verb: "v.", adjective: "adj.", adverb: "adv.", pronoun: "pron.",
   preposition: "prep.", conjunction: "conj.", interjection: "interj.",
-  determiner: "det.", "phrasal verb": "phr. v.", idiom: "idiom", other: "",
+  determiner: "det.", number: "num.", "phrasal verb": "phr. v.", idiom: "idiom", other: "",
 };
 
 const POS_NAMES = Object.keys(POS_SHORT);

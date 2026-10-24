@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 
 export const PARTS_OF_SPEECH = [
   "noun", "verb", "adjective", "adverb", "pronoun", "preposition",
-  "conjunction", "interjection", "determiner", "phrasal verb", "idiom", "other",
+  "conjunction", "interjection", "determiner", "number", "phrasal verb", "idiom", "other",
 ];
 
 const SCHEMA = {

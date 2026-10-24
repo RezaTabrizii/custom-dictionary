@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { createReadStream, existsSync, readFileSync } from "node:fs";
+import { createReadStream, existsSync, readdirSync, readFileSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { cleanPersian, cleanPersianWord, cleanSenses, CLEANUP_VERSION } from "./persian.js";
 import { createGunzip } from "node:zlib";
@@ -17,6 +17,9 @@ export const COMMON_WORDS_FILE = new URL("../lexicon/common-words.txt.gz", impor
 // Persian meanings written with Claude: words Wiktionary leaves out, and
 // corrections to its meanings. See parseExtra for the format.
 export const EXTRA_FILE = new URL("../lexicon/claude-fa.tsv", import.meta.url);
+// The complete dictionary written with Claude: the most common English words,
+// each with all its common meanings. See parseDictionary for the format.
+export const DICTIONARY_DIR = new URL("../lexicon/dictionary/", import.meta.url);
 
 const POS = {
   noun: "noun", verb: "verb", adj: "adjective", adv: "adverb", pron: "pronoun",
@@ -340,24 +343,112 @@ export function applyExtra(records, { records: extra, forms, removals }) {
   };
 }
 
-// Fills the lexicon table from the bundled file on first run, and again only
-// when the file has changed.
-export async function loadLexicon(db, file = LEXICON_FILE, commonFile = COMMON_WORDS_FILE, extraFile = EXTRA_FILE) {
-  if (!existsSync(file)) return db.lexiconSize();
+/* ---------- The complete dictionary ---------- */
+
+// Reads one file of the complete dictionary. Lines starting with # are comments;
+// the others are tab-separated. Each word starts with a line marked @, giving its
+// pronunciation and its irregular forms, followed by one line per meaning:
+//   go	@	/ɡoʊ/	went,gone
+//   go	verb	رفتن	To move from one place to another.	We go to school by bus.
+//   go	noun	نوبت	A turn to do something.	It's your go.
+// Regular forms (goes, going; cars; bigger) are added by the loader.
+export function parseDictionary(text) {
+  const words = new Map();
+  for (const line of text.split("\n")) {
+    if (!line.trim() || line.startsWith("#")) continue;
+    const [word = "", type = "", a = "", b = "", c = ""] = line.split("\t").map((x) => x.trim());
+    if (!word || !type) continue;
+    const key = word.toLowerCase();
+    const rec = words.get(key) ?? { word, phonetic: "", audio: "", forms: [], senses: [], complete: true };
+    words.set(key, rec);
+    if (type === "@") {
+      rec.phonetic ||= a;
+      rec.forms = [...new Set([...rec.forms, ...b.split(",").map((x) => x.trim()).filter(Boolean)])];
+      continue;
+    }
+    const persian = a.split("،").map((x) => x.trim()).filter(Boolean);
+    if (persian.length) rec.senses.push({ partOfSpeech: type, persian, definition: b, example: c });
+  }
+  for (const [key, rec] of words) if (!rec.senses.length) words.delete(key);
+  return words;
+}
+
+// The regular forms of a word of these types: cars, goes, going, liked, bigger.
+// An irregular verb (one whose forms are listed) gets no -ed form: see -> saw, not "seed".
+export function regularForms(word, types, irregular = false) {
+  if (!/^[a-z]+$/.test(word)) return [];
+  const consonantY = /[^aeiou]y$/.test(word);
+  const silentE = word.endsWith("e") && !word.endsWith("ee");
+  // A one-syllable word ending in one vowel and a consonant doubles it: stop -> stopped, big -> bigger.
+  const base = /^[^aeiou]*[aeiou][bdgmnpt]$/.test(word) ? word + word.at(-1) : word;
+  const out = [];
+  if (types.has("noun") || types.has("verb")) {
+    out.push(/(s|x|z|ch|sh)$/.test(word) ? `${word}es` : consonantY ? `${word.slice(0, -1)}ies` : `${word}s`);
+  }
+  if (types.has("verb")) {
+    out.push(word.endsWith("ie") ? `${word.slice(0, -2)}ying` : silentE ? `${word.slice(0, -1)}ing` : `${base}ing`);
+    if (!irregular) out.push(consonantY ? `${word.slice(0, -1)}ied` : word.endsWith("e") ? `${word}d` : `${base}ed`);
+  }
+  if (types.has("adjective") && word.length <= 6) {
+    const stem = consonantY ? `${word.slice(0, -1)}i` : word.endsWith("e") ? word.slice(0, -1) : base;
+    out.push(`${stem}er`, `${stem}est`);
+  }
+  return out.filter((f) => f !== word);
+}
+
+// Reads every file of the complete dictionary, in name order.
+export function readDictionary(dir = DICTIONARY_DIR) {
+  if (!existsSync(dir)) return { words: new Map(), text: "" };
+  const names = readdirSync(dir).filter((n) => n.endsWith(".tsv")).sort();
+  const text = names.map((n) => readFileSync(new URL(n, dir), "utf8")).join("\n");
+  return { words: parseDictionary(text), text };
+}
+
+// Puts the complete dictionary into the lexicon records (in place): its words
+// replace the Wiktionary meanings, and keep the Wiktionary pronunciation and
+// recording when the dictionary gives none.
+export function applyDictionary(records, dictionary) {
+  const byWord = new Map(records.map((r) => [r.word.toLowerCase(), r]));
+  for (const [key, rec] of dictionary) {
+    const types = new Set(rec.senses.map((s) => s.partOfSpeech));
+    const forms = [...rec.forms, ...regularForms(key, types, rec.forms.length > 0)];
+    const prev = byWord.get(key);
+    if (prev) {
+      prev.word = rec.word;
+      prev.phonetic = rec.phonetic || prev.phonetic;
+      prev.forms = [...new Set([...prev.forms, ...forms])];
+      prev.senses = rec.senses.map((s) => ({ ...s }));
+      prev.complete = true;
+    } else {
+      records.push({ ...rec, forms: [...new Set(forms)], senses: rec.senses.map((s) => ({ ...s })) });
+    }
+  }
+  return records;
+}
+
+// Fills the lexicon table from the bundled files on first run, and again only
+// when one of them has changed.
+export async function loadLexicon(db, file = LEXICON_FILE, commonFile = COMMON_WORDS_FILE, extraFile = EXTRA_FILE, dictionaryDir = DICTIONARY_DIR) {
+  const dictionary = readDictionary(dictionaryDir);
+  if (!existsSync(file) && !dictionary.words.size) return db.lexiconSize();
   const hash = (f) => (existsSync(f) ? createHash("sha256").update(readFileSync(f)).digest("hex") : "");
+  const dictionaryHash = createHash("sha256").update(dictionary.text).digest("hex");
   // Includes the cleanup version, so a file built before a cleanup change is cleaned on load.
-  const version = `${hash(file)}:${hash(commonFile)}:${hash(extraFile)}:${CLEANUP_VERSION}`;
+  const version = `${hash(file)}:${hash(commonFile)}:${hash(extraFile)}:${dictionaryHash}:${CLEANUP_VERSION}`;
   if (db.lexiconVersion() === version) return db.lexiconSize();
 
   const records = [];
   const families = [];
-  for await (const line of readLines(createReadStream(file), true)) {
-    if (!line.trim()) continue;
-    const record = JSON.parse(line);
-    if (record.base) families.push(record);
-    else records.push(record);
+  if (existsSync(file)) {
+    for await (const line of readLines(createReadStream(file), true)) {
+      if (!line.trim()) continue;
+      const record = JSON.parse(line);
+      if (record.base) families.push(record);
+      else records.push(record);
+    }
   }
   const fixSaved = existsSync(extraFile) ? applyExtra(records, parseExtra(readFileSync(extraFile, "utf8"))) : null;
+  applyDictionary(records, dictionary.words);
   for (const r of records) r.senses = cleanSenses(r.senses);
 
   // Leaves rare words out of the families, also for files built before the

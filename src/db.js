@@ -64,7 +64,9 @@ export function openDb(file = ":memory:") {
       word     TEXT PRIMARY KEY COLLATE NOCASE,
       phonetic TEXT NOT NULL,
       senses   TEXT NOT NULL,
-      audio    TEXT NOT NULL DEFAULT ''
+      audio    TEXT NOT NULL DEFAULT '',
+      -- 1 for words of the complete dictionary, which need no online lookup.
+      complete INTEGER NOT NULL DEFAULT 0
     );
     CREATE TABLE IF NOT EXISTS lexicon_forms (
       form TEXT PRIMARY KEY COLLATE NOCASE,
@@ -93,14 +95,14 @@ export function openDb(file = ":memory:") {
     lexiconSize: db.prepare("SELECT count(*) AS n FROM lexicon"),
     metaGet: db.prepare("SELECT value FROM meta WHERE key = ?"),
     metaSet: db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)"),
-    lexiconInsert: db.prepare("INSERT OR IGNORE INTO lexicon (word, phonetic, audio, senses) VALUES (?, ?, ?, ?)"),
+    lexiconInsert: db.prepare("INSERT OR IGNORE INTO lexicon (word, phonetic, audio, senses, complete) VALUES (?, ?, ?, ?, ?)"),
     formInsert: db.prepare("INSERT OR IGNORE INTO lexicon_forms (form, word) VALUES (?, ?)"),
     familyInsert: db.prepare("INSERT OR IGNORE INTO lexicon_family (word, base) VALUES (?, ?)"),
     familyOf: db.prepare("SELECT base AS w FROM lexicon_family WHERE word = ?1 UNION SELECT word FROM lexicon_family WHERE base = ?1"),
     lexiconGet: db.prepare(`
-      SELECT word, phonetic, audio, senses FROM lexicon WHERE word = ?1
+      SELECT word, phonetic, audio, senses, complete FROM lexicon WHERE word = ?1
       UNION ALL
-      SELECT l.word, l.phonetic, l.audio, l.senses FROM lexicon_forms f JOIN lexicon l ON l.word = f.word WHERE f.form = ?1
+      SELECT l.word, l.phonetic, l.audio, l.senses, l.complete FROM lexicon_forms f JOIN lexicon l ON l.word = f.word WHERE f.form = ?1
       LIMIT 1`),
 
     userCount: db.prepare("SELECT count(*) AS n FROM users"),
@@ -266,7 +268,7 @@ export function openDb(file = ":memory:") {
         db.exec("DELETE FROM lexicon; DELETE FROM lexicon_forms; DELETE FROM lexicon_family;");
         q.metaSet.run("lexicon", version);
         for (const r of records) {
-          q.lexiconInsert.run(r.word, r.phonetic, r.audio ?? "", JSON.stringify(r.senses));
+          q.lexiconInsert.run(r.word, r.phonetic, r.audio ?? "", JSON.stringify(r.senses), r.complete ? 1 : 0);
           for (const form of r.forms) q.formInsert.run(form, r.word);
         }
         for (const f of families) {
@@ -303,7 +305,9 @@ export function openDb(file = ":memory:") {
     },
     findInLexicon(word) {
       const row = q.lexiconGet.get(word);
-      return row && { word: row.word, phonetic: row.phonetic, audio: row.audio, senses: JSON.parse(row.senses) };
+      return row && {
+        word: row.word, phonetic: row.phonetic, audio: row.audio, senses: JSON.parse(row.senses), complete: row.complete === 1,
+      };
     },
   };
 }
@@ -315,6 +319,7 @@ function migrate(db) {
 
   // Columns added after the first release.
   if (!columns("lexicon").includes("audio")) db.exec("ALTER TABLE lexicon ADD COLUMN audio TEXT NOT NULL DEFAULT ''");
+  if (!columns("lexicon").includes("complete")) db.exec("ALTER TABLE lexicon ADD COLUMN complete INTEGER NOT NULL DEFAULT 0");
   if (!columns("words").includes("audio")) db.exec("ALTER TABLE words ADD COLUMN audio TEXT NOT NULL DEFAULT ''");
   if (!columns("words").includes("group_id")) db.exec("ALTER TABLE words ADD COLUMN group_id INTEGER REFERENCES groups(id)");
   if (!columns("groups").includes("user_id")) {
