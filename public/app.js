@@ -24,6 +24,8 @@ const els = {
   authSwitchText: $("#auth-switch-text"),
   accountBtn: $("#account-btn"),
   accountMenu: $("#account-menu"),
+  orderBtn: $("#order-btn"),
+  orderMenu: $("#order-menu"),
   pwDialog: $("#password-dialog"),
   pwForm: $("#password-form"),
   dropTop: $("#drop-top"),
@@ -45,6 +47,7 @@ let relatives = []; // other forms of a new word being added, like "quickly" for
 let editing = null; // index of the meaning being edited, "new" for a new one, or null
 let renaming = null; // { id, isNew } of the group whose name is being typed
 let refreshing = null; // id of the word whose meanings are being looked up again
+let order = "groups"; // how the list is sorted: "groups" first, "newest" first or "az"
 
 /* ---------- API ---------- */
 
@@ -54,6 +57,7 @@ const storage = {
   remove: (k) => { try { localStorage.removeItem(k); } catch {} },
 };
 storage.remove("password"); // the shared password of earlier versions
+if (["groups", "newest", "az"].includes(storage.get("order"))) order = storage.get("order");
 
 // Groups the user has opened since the page loaded or the search was last
 // cleared; every other group is closed.
@@ -143,25 +147,43 @@ function renderList() {
   const groupsIn = Map.groupBy(groups, (g) => g.parentId);
   const wordsIn = Map.groupBy(words, (w) => w.groupId);
 
-  // One level of the tree: its groups (A to Z) then its words (newest first).
+  // A group's place among newest-first items is that of the newest word inside it.
+  const newestIn = new Map();
+  const newest = (id) => {
+    if (!newestIn.has(id)) {
+      newestIn.set(id, Math.max(0, ...(wordsIn.get(id) ?? []).map((w) => w.id),
+        ...(groupsIn.get(id) ?? []).map((g) => newest(g.id))));
+    }
+    return newestIn.get(id);
+  };
+  const items = (parentId) => {
+    const gs = (groupsIn.get(parentId) ?? []).map((g) => ({ g, name: g.name, at: newest(g.id) }));
+    const ws = (wordsIn.get(parentId) ?? []).map((w) => ({ w, name: w.word, at: w.id }));
+    if (order === "newest") return [...gs, ...ws].sort((a, b) => b.at - a.at);
+    if (order === "az") return [...gs, ...ws].sort(byName);
+    return [...gs.sort(byName), ...ws.sort((a, b) => b.at - a.at)];
+  };
+
+  // One level of the tree, in the chosen order.
   // While searching, a group shows when its name or anything inside it matches.
   function level(parentId, showAll) {
     let html = "";
     let shown = 0;
     let total = 0;
-    for (const g of (groupsIn.get(parentId) ?? []).toSorted(byName)) {
+    for (const { g, w } of items(parentId)) {
+      if (w) {
+        total++;
+        if (!showAll && !matches(w, q)) continue;
+        shown++;
+        html += wordHtml(w, selected);
+        continue;
+      }
       const nameMatches = Boolean(q) && g.name.toLowerCase().includes(q);
       const inner = level(g.id, showAll || nameMatches);
       total += inner.total;
       if (!showAll && !nameMatches && !inner.shown) continue;
       shown += inner.shown;
       html += groupHtml(g, inner.html, inner.total, Boolean(q));
-    }
-    for (const w of wordsIn.get(parentId) ?? []) {
-      total++;
-      if (!showAll && !matches(w, q)) continue;
-      shown++;
-      html += wordHtml(w, selected);
     }
     return { html, shown, total };
   }
@@ -977,6 +999,51 @@ els.authForm.addEventListener("submit", async (e) => {
   } finally {
     els.authSubmit.disabled = false;
   }
+});
+
+/* Order menu */
+
+function showOrder() {
+  for (const btn of els.orderMenu.querySelectorAll("[data-order]")) {
+    btn.setAttribute("aria-checked", String(btn.dataset.order === order));
+  }
+}
+showOrder();
+
+function closeOrderMenu() {
+  els.orderMenu.hidden = true;
+  els.orderBtn.setAttribute("aria-expanded", "false");
+}
+
+els.orderBtn.addEventListener("click", () => {
+  if (!els.orderMenu.hidden) return closeOrderMenu();
+  const r = els.orderBtn.getBoundingClientRect();
+  els.orderMenu.hidden = false;
+  els.orderBtn.setAttribute("aria-expanded", "true");
+  els.orderMenu.style.top = `${r.bottom + 4}px`;
+  els.orderMenu.style.left = `${Math.max(8, r.right - els.orderMenu.offsetWidth)}px`;
+  els.orderMenu.querySelector('[aria-checked="true"]').focus();
+});
+
+document.addEventListener("pointerdown", (e) => {
+  if (!els.orderMenu.hidden && !els.orderMenu.contains(e.target) && !els.orderBtn.contains(e.target)) closeOrderMenu();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !els.orderMenu.hidden) {
+    closeOrderMenu();
+    els.orderBtn.focus();
+  }
+});
+
+els.orderMenu.addEventListener("click", (e) => {
+  const choice = e.target.closest("[data-order]")?.dataset.order;
+  if (!choice) return;
+  closeOrderMenu();
+  els.orderBtn.focus();
+  order = choice;
+  storage.set("order", order);
+  showOrder();
+  renderList();
 });
 
 /* Account menu */

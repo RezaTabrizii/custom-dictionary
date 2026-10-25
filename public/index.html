@@ -55,6 +55,9 @@
         <span class="mark" aria-hidden="true">و</span>
         <span class="brand-name">Vazhe</span>
         <span class="count" id="count"></span>
+        <button class="icon-btn order-btn" type="button" id="order-btn" aria-label="Order" aria-haspopup="menu" aria-expanded="false">
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#i-sort-ascending"/></svg>
+        </button>
         <button class="icon-btn account-btn" type="button" id="account-btn" aria-label="Account" aria-haspopup="menu" aria-expanded="false">
           <svg class="icon" aria-hidden="true"><use href="icons.svg#i-user"/></svg>
         </button>
@@ -102,6 +105,19 @@
     </button>
     <button type="button" role="menuitem" data-menu="ungroup">
       <svg class="icon" aria-hidden="true"><use href="icons.svg#i-folder"/></svg><span>Ungroup<small>Keeps the words, one level up</small></span>
+    </button>
+  </div>
+
+  <div class="menu" id="order-menu" role="menu" aria-labelledby="order-btn" hidden>
+    <p class="menu-note">Order words by</p>
+    <button type="button" role="menuitemradio" aria-checked="false" data-order="groups">
+      <svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg><span>Groups first<small>Groups A to Z, then words newest first</small></span>
+    </button>
+    <button type="button" role="menuitemradio" aria-checked="false" data-order="newest">
+      <svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg><span>Newest first<small>When they were added</small></span>
+    </button>
+    <button type="button" role="menuitemradio" aria-checked="false" data-order="az">
+      <svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg><span>A to Z</span>
     </button>
   </div>
 
