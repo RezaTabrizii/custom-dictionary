@@ -73,6 +73,20 @@ test("adds, lists, annotates and deletes a word", async () => {
   assert.deepEqual(await (await call("/words")).json(), []);
 });
 
+test("looks a saved word up again, keeping its sentences", async () => {
+  const word = await (await call("/words", { method: "POST", body: { word: "run" } })).json();
+  await call(`/words/${word.id}/senses`, { method: "PUT", body: { senses: [{ ...word.senses[0], persian: ["خودم"] }] } });
+  await call(`/words/${word.id}/examples`, { method: "POST", body: { text: "We ran home." } });
+
+  const res = await call(`/words/${word.id}/refresh`, { method: "POST", body: {} });
+  assert.equal(res.status, 200);
+  const refreshed = await res.json();
+  assert.deepEqual(refreshed.senses.map((s) => s.persian), [["دویدن"], ["دو"]]);
+  assert.deepEqual(refreshed.examples.map((e) => e.text), ["We ran home."]);
+  assert.equal((await call("/words/999/refresh", { method: "POST", body: {} })).status, 404);
+  await call(`/words/${word.id}`, { method: "DELETE" });
+});
+
 test("reports words the dictionary does not know", async () => {
   const res = await call("/words", { method: "POST", body: { word: "qwzx" } });
   assert.equal(res.status, 422);

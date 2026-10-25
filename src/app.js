@@ -253,12 +253,30 @@ export function createApp({ db, lookup, signupCode = "", trustProxy = false }) {
       // asks POST /words/:id/family to add the missing ones and group them.
       res.status(201).json({ ...word, ...familyOf(store, word.word) });
     } catch (err) {
-      if (err instanceof LookupError) return res.status(422).json({ error: err.message });
-      if (err instanceof TooManyLookups) {
-        return res.status(429).json({ error: "You've looked up a lot of words in the last hour. Try again later." });
-      }
-      console.error("Lookup failed:", err);
-      res.status(502).json({ error: "Couldn't reach the dictionary service. Try again." });
+      lookupFailed(res, err);
+    }
+  });
+
+  const lookupFailed = (res, err) => {
+    if (err instanceof LookupError) return res.status(422).json({ error: err.message });
+    if (err instanceof TooManyLookups) {
+      return res.status(429).json({ error: "You've looked up a lot of words in the last hour. Try again later." });
+    }
+    console.error("Lookup failed:", err);
+    res.status(502).json({ error: "Couldn't reach the dictionary service. Try again." });
+  };
+
+  // Looks a saved word up again and replaces its meanings with the new ones.
+  // The person's sentences and the word's group stay.
+  api.post("/words/:id/refresh", async (req, res) => {
+    const store = req.store;
+    const word = store.getWord(Number(req.params.id));
+    if (!word) return notFound(res);
+    try {
+      const entry = await lookupFor(req)(word.word);
+      res.json(store.refreshWord(word.id, entry));
+    } catch (err) {
+      lookupFailed(res, err);
     }
   });
 

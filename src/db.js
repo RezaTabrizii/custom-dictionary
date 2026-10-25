@@ -383,6 +383,7 @@ function userStore(db, uid) {
     examplesOf: db.prepare("SELECT * FROM examples WHERE word_id = ? ORDER BY id"),
     insert: db.prepare("INSERT INTO words (user_id, word, phonetic, audio, senses) VALUES (?1, ?2, ?3, ?4, ?5)"),
     updateSenses: db.prepare("UPDATE words SET senses = ?3 WHERE id = ?2 AND user_id = ?1"),
+    updateEntry: db.prepare("UPDATE words SET phonetic = ?3, audio = ?4, senses = ?5 WHERE id = ?2 AND user_id = ?1"),
     remove: db.prepare("DELETE FROM words WHERE id = ?2 AND user_id = ?1"),
     insertExample: db.prepare("INSERT INTO examples (word_id, text) VALUES (?, ?)"),
     removeExample: db.prepare(`
@@ -482,6 +483,11 @@ function userStore(db, uid) {
     // Replaces a word's meanings with the person's edited ones.
     updateSenses(id, senses) {
       if (!q.updateSenses.run(uid, id, JSON.stringify(cleanSenses(senses))).changes) return null;
+      return this.getWord(id);
+    },
+    // Replaces a word's pronunciation and meanings with a fresh lookup's.
+    refreshWord(id, { phonetic, audio = "", senses }) {
+      if (!q.updateEntry.run(uid, id, phonetic, audio, JSON.stringify(cleanSenses(senses))).changes) return null;
       return this.getWord(id);
     },
     deleteWord(id) {

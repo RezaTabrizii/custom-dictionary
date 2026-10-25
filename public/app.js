@@ -44,6 +44,7 @@ let pending = null; // the word currently being looked up
 let relatives = []; // other forms of a new word being added, like "quickly" for "quick"
 let editing = null; // index of the meaning being edited, "new" for a new one, or null
 let renaming = null; // { id, isNew } of the group whose name is being typed
+let refreshing = null; // id of the word whose meanings are being looked up again
 
 /* ---------- API ---------- */
 
@@ -238,6 +239,8 @@ function renderDetail() {
         <div class="pron">
           ${w.audio || "speechSynthesis" in window ? `<button class="icon-btn" type="button" data-action="speak" aria-label="Hear the pronunciation">${icon("speaker-high")}</button>` : ""}
           <span>${esc(w.phonetic)}</span>
+          <button class="icon-btn refresh${refreshing === w.id ? " spinning" : ""}" type="button" data-action="refresh-word"
+                  aria-label="Look up the meanings again" title="Look up the meanings again" ${refreshing === w.id ? "disabled" : ""}>${icon("arrow-clockwise")}</button>
         </div>
       </header>
       ${w.senses.some((s) => s.persian.length) || editing !== null ? "" : `<p class="no-persian">No Persian meaning was found for this word. You can add your own.</p>`}
@@ -409,6 +412,24 @@ async function saveSenses(w, senses, form) {
   }
 }
 
+// Looks the word up again and replaces its meanings; its sentences and group stay.
+async function refreshWord(w) {
+  if (refreshing) return;
+  if (!confirm(`Look up "${w.word}" again? Its meanings will be replaced, including any you edited.`)) return;
+  refreshing = w.id;
+  editing = null;
+  renderDetail();
+  try {
+    replaceWord(await api(`/words/${w.id}/refresh`, { method: "POST", body: {} }));
+    setStatus(`Updated the meanings of "${w.word}".`);
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    refreshing = null;
+    renderDetail();
+  }
+}
+
 function replaceWord(updated) {
   words = words.map((w) => (w.id === updated.id ? updated : w));
   render();
@@ -464,6 +485,7 @@ els.detail.addEventListener("click", async (e) => {
   if (!w) return;
 
   if (btn.dataset.action === "speak") pronounce(w);
+  if (btn.dataset.action === "refresh-word") refreshWord(w);
   if (btn.dataset.action === "edit-sense") editSense(btn.dataset.index === "new" ? "new" : Number(btn.dataset.index));
   if (btn.dataset.action === "cancel-edit") {
     editing = null;
